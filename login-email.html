@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+  <link as="style" href="https://fonts.googleapis.com/css2?display=swap&family=Inter:wght@400;500;700;900&family=Noto+Sans:wght@400;500;700;900" onload="this.rel='stylesheet'" rel="stylesheet"/>
+  <title>Controller Shift - Email Login</title>
+  <link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <style type="text/tailwindcss">
+    :root {
+      --primary-color: #137fec;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans">
+  <div class="flex flex-col min-h-screen">
+    <header class="flex items-center justify-start p-6 border-b border-gray-200">
+      <div class="flex items-center gap-3 text-gray-800">
+        <div class="w-8 h-8">
+          <img src="ThinkersAfrica_Logo.jpeg" alt="ThinkersAfrica Logo" class="w-full h-full object-contain" />
+        </div>
+        <h1 class="text-xl font-bold">Shift Report</h1>
+      </div>
+    </header>
+    <main class="flex-grow flex items-center justify-center">
+      <div class="w-full max-w-md p-8 space-y-6">
+        <div class="text-center space-y-2">
+          <h2 class="text-3xl font-bold text-gray-900">Email Sign-In</h2>
+          <p class="text-sm text-gray-600">Use your verified work email credentials to access the Shift Report system.</p>
+        </div>
+        <div id="loginMessage" class="hidden p-4 rounded-xl text-sm font-medium"></div>
+        <form id="emailSignInForm" class="space-y-4 text-left">
+          <div class="space-y-1">
+            <label for="emailInput" class="text-sm font-medium text-gray-700">Work Email</label>
+            <input id="emailInput" type="email" autocomplete="email" required class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500" placeholder="name@thinkersafrika.com" />
+          </div>
+          <div class="space-y-1">
+            <label for="passwordInput" class="text-sm font-medium text-gray-700">Password</label>
+            <input id="passwordInput" type="password" autocomplete="current-password" required class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500" placeholder="Enter your password" />
+          </div>
+          <button id="emailSignIn" type="submit" class="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+            Sign in with Email
+          </button>
+        </form>
+        <a href="index.html" class="block w-full text-center rounded-xl border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+          Use Microsoft 365 sign-in instead
+        </a>
+        <div class="text-center text-xs text-gray-500">
+          Need access? Contact your manager or system administrator.
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="./firebase-config.js"></script>
+  <script type="module" src="./js/login-email.js"></script>
+</body>
+</html>
+

@@ -61,42 +61,6 @@ document.getElementById('microsoftSignIn').addEventListener('click', async () =>
   }
 });
 
-// Email/password sign-in
-const emailSignInForm = document.getElementById('emailSignInForm');
-if (emailSignInForm) {
-  emailSignInForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    
-    const emailInput = document.getElementById('emailInput');
-    const passwordInput = document.getElementById('passwordInput');
-    const email = emailInput?.value.trim() || '';
-    const password = passwordInput?.value || '';
-
-    if (!email || !password) {
-      showError('Please enter both your email and password.');
-      return;
-    }
-
-    try {
-      showLoading('Signing in with email...');
-
-      const result = await userService.signIn(email, password);
-      if (!result.success) {
-        throw new Error(result.error || 'Unable to sign in with email. Please try again.');
-      }
-
-      hideLoading();
-      showSuccess('Signed in successfully! Redirecting...');
-
-    } catch (error) {
-      console.error('Email sign-in error:', error);
-      hideLoading();
-      showError(error.message || 'Sign-in failed. Please check your credentials and try again.');
-      return;
-    }
-  });
-}
-
 // Show loading state
 function showLoading(message) {
   const loadingEl = document.getElementById('loginMessage');
@@ -112,13 +76,6 @@ function showLoading(message) {
     microsoftBtn.disabled = true;
     microsoftBtn.classList.add('opacity-50', 'cursor-not-allowed');
   }
-
-  // Disable email sign-in button
-  const emailBtn = document.getElementById('emailSignIn');
-  if (emailBtn) {
-    emailBtn.disabled = true;
-    emailBtn.classList.add('opacity-50', 'cursor-not-allowed');
-  }
 }
 
 // Hide loading state
@@ -133,13 +90,6 @@ function hideLoading() {
   if (microsoftBtn) {
     microsoftBtn.disabled = false;
     microsoftBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-  }
-
-  // Re-enable email sign-in button
-  const emailBtn = document.getElementById('emailSignIn');
-  if (emailBtn) {
-    emailBtn.disabled = false;
-    emailBtn.classList.remove('opacity-50', 'cursor-not-allowed');
   }
 }
 

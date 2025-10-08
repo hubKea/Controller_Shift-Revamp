@@ -28,27 +28,12 @@
       <div class="w-full max-w-md p-8 space-y-6">
         <div class="text-center space-y-2">
           <h2 class="text-3xl font-bold text-gray-900">Welcome Back</h2>
-          <p class="text-sm text-gray-600">Sign in with your Microsoft 365 work account or use your email credentials to access the Shift Report system.</p>
+          <p class="text-sm text-gray-600">Sign in with your Microsoft 365 work account to access the Shift Report system.</p>
         </div>
         <div id="loginMessage" class="hidden p-4 rounded-xl text-sm font-medium"></div>
-        <form id="emailSignInForm" class="space-y-4 text-left">
-          <div class="space-y-1">
-            <label for="emailInput" class="text-sm font-medium text-gray-700">Work Email</label>
-            <input id="emailInput" type="email" autocomplete="email" required class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500" placeholder="name@thinkersafrika.com" />
-          </div>
-          <div class="space-y-1">
-            <label for="passwordInput" class="text-sm font-medium text-gray-700">Password</label>
-            <input id="passwordInput" type="password" autocomplete="current-password" required class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500" placeholder="Enter your password" />
-          </div>
-          <button id="emailSignIn" type="submit" class="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-            Sign in with Email
-          </button>
-        </form>
-        <div class="flex items-center justify-center gap-3 text-xs text-gray-400">
-          <span class="h-px w-12 bg-gray-200"></span>
-          <span>or continue with</span>
-          <span class="h-px w-12 bg-gray-200"></span>
-        </div>
+        <a href="login-email.html" class="block w-full text-center rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+          Use email sign-in instead
+        </a>
         <button id="microsoftSignIn" class="w-full flex justify-center items-center gap-3 py-4 px-6 border border-gray-300 rounded-xl shadow-sm text-base font-semibold text-gray-800 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
           <svg class="w-6 h-6" viewBox="0 0 21 21" aria-hidden="true">
             <path fill="#f25022" d="M1 1h9v9H1z"/>

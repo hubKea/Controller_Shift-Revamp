@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?display=swap&family=Inter%3Awght%40400%3B500%3B700%3B900&family=Noto+Sans%3Awght%40400%3B500%3B700%3B900" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<title>Controller Dashboard - Thinkers Afrika</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style type="text/tailwindcss">
+      :root {
+        --primary-500: #137fec;
+        --neutral-50: #f8fafc;
+        --neutral-100: #f1f5f9;
+        --neutral-200: #e2e8f0;
+        --neutral-300: #cbd5e1;
+        --neutral-400: #94a3b8;
+        --neutral-500: #64748b;
+        --neutral-600: #475569;
+        --neutral-700: #334155;
+        --neutral-800: #1e293b;
+        --neutral-900: #0f172a;
+        --green-50: #f0fdf4;
+        --green-100: #dcfce7;
+        --green-500: #22c55e;
+        --green-700: #15803d;
+        --yellow-50: #fefce8;
+        --yellow-100: #fef08a;
+        --yellow-500: #eab308;
+        --yellow-700: #a16207;
+        --red-50: #fef2f2;
+        --red-100: #fee2e2;
+        --red-500: #ef4444;
+        --red-700: #b91c1c;
+        --blue-50: #eff6ff;
+        --blue-100: #dbeafe;
+        --blue-500: #3b82f6;
+        --blue-700: #1d4ed8;
+      }
+      .material-symbols-outlined {
+        font-variation-settings:
+        'FILL' 0,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+      }
+    </style>
+</head>
+<body class="bg-neutral-50 text-neutral-800" style='font-family: Inter, "Noto Sans", sans-serif;'>
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<header class="sticky top-0 z-20 flex items-center justify-between whitespace-nowrap border-b border-neutral-200 bg-neutral-50 px-10 py-3">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-neutral-900">
+<div class="h-8 w-8">
+  <img src="ThinkersAfrica_Logo.jpeg" alt="ThinkersAfrica Logo" class="h-full w-full object-contain" />
+</div>
+<h1 class="text-xl font-bold">Thinkers Afrika</h1>
+</div>
+<nav class="flex items-center gap-6">
+<a class="text-sm font-bold text-primary-500 border-b-2 border-primary-500 pb-1" href="dashboard-controller.html">Dashboard</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative rounded-full p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700">
+<span class="material-symbols-outlined"> notifications </span>
+</button>
+<div class="h-10 w-10 rounded-full bg-cover bg-center" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD28RCrVpF_Mrb_Y6VHsI2u1sA9eBWp8y9HSHNYJhfCxci4Kf0pJ5gaWTdr3ZlOEwoi1SxQ3sxgCCqLC0ZM-LLM_v6MiXWJvsE-hTkq3A-4wrskcypnIufVE_uORyF3J0rSt_YT0JcM1GVFtqHnL0-t5h0m5ekjuyhHnu_qP0pPpVL76uOxU5ARZw8j9OPLrGBEA658oPxOweg5bQkfF2IL9n0AY1vJlDe35WqqH8avF3j00z7-LqcMGVXLkbLmzZR4gNhVm2IqEK_O");'></div>
+</div>
+</header>
+<main class="flex-1 bg-neutral-100 px-10 py-8">
+<div class="mx-auto max-w-7xl">
+<div class="mb-8 flex items-center justify-between">
+<h2 class="text-3xl font-bold tracking-tight text-neutral-900">Shift Reports</h2>
+<a href="report-form.html" class="flex items-center justify-center gap-2 rounded-[12px] border border-neutral-800 bg-transparent px-4 py-2 text-sm font-semibold text-neutral-800 transition-colors hover:bg-neutral-800 hover:text-white">
+<span class="material-symbols-outlined"> add </span>
+<span>Create New Report</span>
+</a>
+</div>
+<div class="mb-6 rounded-lg border border-gray-200 bg-white p-6">
+<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+<div>
+<label class="block text-sm font-medium text-gray-700" for="date-range">Date Range</label>
+<input class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" id="date-range" name="date-range" placeholder="Select Date Range" type="text"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-gray-700" for="controller">Controller</label>
+<select class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" id="controller" name="controller">
+<option>All Controllers</option>
+<!-- Dynamic options will be populated here by JavaScript -->
+</select>
+</div>
+<div>
+<label class="block text-sm font-medium text-gray-700" for="status">Status</label>
+<select class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" id="status" name="status">
+<option>All Statuses</option>
+<option value="draft">Draft</option>
+<option value="submitted">Pending Review</option>
+<option value="under_review">Under Review</option>
+<option value="approved">Approved</option>
+<option value="rejected">Rejected</option>
+</select>
+</div>
+<div class="self-end">
+<button class="flex w-full items-center justify-center gap-2 rounded-lg border border-transparent bg-gray-800 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gray-700" type="button">
+<span class="material-symbols-outlined"> filter_list </span>
+<span>Apply Filters</span>
+</button>
+</div>
+</div>
+</div>
+<div class="overflow-hidden rounded-lg border border-neutral-200 bg-white">
+<div class="relative overflow-x-auto">
+<table class="w-full">
+<thead class="sticky top-0 z-10 bg-neutral-100">
+<tr>
+<th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-neutral-500">Date</th>
+<th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-neutral-500">Site</th>
+<th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-neutral-500">Status</th>
+<th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-neutral-500">Controller on Shift</th>
+<th class="px-6 py-4 text-right text-xs font-medium uppercase tracking-wider text-neutral-500">Actions</th>
+</tr>
+</thead>
+         <tbody class="divide-y divide-neutral-200">
+         <!-- Dynamic content will be populated here by JavaScript -->
+         </tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+  <!-- Firebase Services -->
+  <script type="module" src="firebase-config.js"></script>
+  <script type="module" src="js/user-service.js"></script>
+  <script type="module" src="js/enhanced-report-service.js"></script>
+  <script type="module" src="js/data-model.js"></script>
+  <script type="module" src="js/app.js"></script>
+
+  <!-- Dashboard Controller Script -->
+  <script type="module">
+     import { auth, db } from './firebase-config.js';
+     import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+     import { collection, query, where, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+     import { userService } from './js/user-service.js';
+     import { enhancedReportService } from './js/enhanced-report-service.js';
+
+    class DashboardController {
+      constructor() {
+        this.currentUser = null;
+        this.userRole = null;
+        this.userPermissions = null;
+        this.reports = [];
+        this.reportDocs = new Map();
+        this.reportListeners = [];
+        this.initialSnapshotState = { controller1: false, controller2: false };
+        this.isInitialized = false;
+
+        this.setupAuthListener = this.setupAuthListener.bind(this);
+        this.initializeEventListeners = this.initializeEventListeners.bind(this);
+        this.loadUserReports = this.loadUserReports.bind(this);
+        this.attachReportListeners = this.attachReportListeners.bind(this);
+        this.handleSnapshotUpdate = this.handleSnapshotUpdate.bind(this);
+        this.teardownReportListeners = this.teardownReportListeners.bind(this);
+        this.renderReports = this.renderReports.bind(this);
+        this.applyFilters = this.applyFilters.bind(this);
+
+        this.init();
+      }
+
+      async init() {
+        try {
+          console.log('Initializing Controller Dashboard...');
+          // Set up authentication state listener as primary gatekeeper
+          await this.setupAuthListener();
+          
+          // Initialize event listeners (these don't depend on auth state)
+          this.initializeEventListeners();
+          
+        } catch (error) {
+          console.error('Dashboard initialization error:', error);
+          this.showError('Failed to initialize dashboard');
+        }
+      }
+
+      async setupAuthListener() {
+        console.log('🛡️ Controller Dashboard: Using Authentication Guard...');
+        
+        try {
+          // Use the central authentication guard - it will handle redirects
+          const authResult = await userService.initializeAuthGuard();
+          
+          if (authResult.authenticated) {
+            console.log('✅ Controller Dashboard: Authenticated user:', authResult.user.email, 'Role:', authResult.role);
+            this.currentUser = authResult.user;
+            this.userRole = authResult.role;
+            this.userPermissions = authResult.permissions;
+            
+            // Update header with user info
+            this.updateHeader();
+            
+            // Load user reports only after authentication is confirmed
+            await this.loadUserReports();
+            
+            // Set up real-time updates
+          } else {
+            console.log('❌ Controller Dashboard: User not authenticated, auth guard will redirect');
+            // Auth guard will handle the redirect
+          }
+        } catch (error) {
+          console.error('❌ Controller Dashboard: Error during authentication:', error);
+          this.showError('Failed to authenticate user');
+        }
+      }
+
+      updateHeader() {
+        // Update user avatar and name in header
+        const userAvatar = document.querySelector('.h-10.w-10.rounded-full');
+        const userName = this.currentUser.displayName || this.currentUser.email.split('@')[0];
+        
+        if (userAvatar) {
+          // Use profile photo if available, otherwise generate avatar
+          const profilePhoto = this.currentUser.photoURL;
+          if (profilePhoto) {
+            userAvatar.style.backgroundImage = `url("${profilePhoto}")`;
+          } else {
+            userAvatar.style.backgroundImage = `url("https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=137fec&color=fff&size=40")`;
+          }
+        }
+      }
+
+      initializeEventListeners() {
+        // Initialize any UI event listeners that don't depend on auth state
+        console.log('Controller Dashboard: Event listeners initialized');
+      }
+
+
+
+      initializeEventListeners() {
+        const createReportBtn = document.querySelector('a[href="report-form.html"]');
+        if (createReportBtn) {
+          createReportBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = 'report-form.html';
+          });
+        }
+
+        this.initializeFilters();
+      }
+
+      initializeFilters() {
+        this.setupFilterListeners();
+        this.populateControllerFilter();
+      }
+
+      setupFilterListeners() {
+        // Get filter elements
+        const dateRangeInput = document.querySelector('input[placeholder="Select Date Range"]');
+        const controllerSelect = document.querySelector('select#controller');
+        const statusSelect = document.querySelector('select#status');
+
+        // Add event listeners for real-time filtering
+        if (dateRangeInput) {
+          dateRangeInput.addEventListener('input', () => this.applyFilters());
+        }
+
+        if (controllerSelect) {
+          controllerSelect.addEventListener('change', () => this.applyFilters());
+        }
+
+        if (statusSelect) {
+          statusSelect.addEventListener('change', () => this.applyFilters());
+        }
+
+        // Apply filters button - look for the actual button with proper selector
+        const actualApplyBtn = document.querySelector('button[type="button"]:not(#clearFiltersBtn)');
+        if (actualApplyBtn && actualApplyBtn.textContent.includes('Apply Filters')) {
+          actualApplyBtn.addEventListener('click', () => {
+            console.log('🔍 Apply Filters button clicked');
+            this.applyFilters();
+          });
+        }
+
+        // Clear filters functionality
+        this.addClearFiltersButton();
+      }
+
+      addClearFiltersButton() {
+        const filtersContainer = document.querySelector('.grid.grid-cols-1.gap-6.sm\\:grid-cols-2.lg\\:grid-cols-4');
+        
+        if (filtersContainer && !document.getElementById('clearFiltersBtn')) {
+          const clearFiltersHTML = `
+            <div class="self-end">
+              <button id="clearFiltersBtn" class="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50" type="button">
+                <span class="material-symbols-outlined">clear_all</span>
+                <span>Clear Filters</span>
+              </button>
+            </div>
+          `;
+          filtersContainer.insertAdjacentHTML('beforeend', clearFiltersHTML);
+          
+          const clearBtn = document.getElementById('clearFiltersBtn');
+          if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+              // Clear all filter inputs
+              const dateInput = document.querySelector('input[placeholder="Select Date Range"]');
+              const controllerSelect = document.querySelector('select#controller');
+              const statusSelect = document.querySelector('select#status');
+              
+              if (dateInput) dateInput.value = '';
+              if (controllerSelect) controllerSelect.selectedIndex = 0;
+              if (statusSelect) statusSelect.selectedIndex = 0;
+              
+              // Reapply filters (which will show all reports)
+              this.applyFilters();
+            });
+          }
+        }
+      }
+
+      async populateControllerFilter() {
+        try {
+          // For controller dashboard, populate with current user's collaborators
+          // This is a simplified version - could be enhanced to fetch actual collaborators
+          const controllerSelect = document.querySelector('select#controller');
+          if (controllerSelect) {
+            // Keep the existing options but ensure current user is included
+            const currentUserName = this.currentUser.displayName || this.currentUser.email.split('@')[0];
+            
+            // Check if current user option already exists
+            const existingOptions = Array.from(controllerSelect.options).map(option => option.value.toLowerCase());
+            if (!existingOptions.includes(currentUserName.toLowerCase())) {
+              const option = document.createElement('option');
+              option.value = currentUserName.toLowerCase();
+              option.textContent = currentUserName;
+              controllerSelect.appendChild(option);
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error populating controller filter:', error);
+        }
+      }
+
+      async loadUserReports() {
+        try {
+          this.showSkeletonLoading();
+          this.showLoading('Loading your shift reports...');
+
+          const userProfile = await userService.getUserProfile(this.currentUser.uid);
+          const controllerName = userProfile.displayName || userProfile.email.split('@')[0];
+
+          console.log('🔍 Loading reports for controller:', controllerName);
+
+          await this.attachReportListeners(controllerName);
+        } catch (error) {
+          console.error('Error loading reports:', error);
+          this.showError('Failed to load reports: ' + error.message);
+          this.hideLoading();
+          this.renderReports(); // Clear skeleton loading on error
+        }
+      }
+
+      async attachReportListeners(controllerName) {
+        this.teardownReportListeners();
+        this.reportDocs.clear();
+        this.reports = [];
+        this.initialSnapshotState = { controller1: false, controller2: false };
+
+        const reportsRef = collection(db, 'shiftReports');
+        const normalizedName = (controllerName || '').trim();
+
+        const registerListener = (fieldKey) => {
+          const q = query(
+            reportsRef,
+            where(fieldKey, '==', normalizedName)
+          );
+
+          const unsubscribe = onSnapshot(
+            q,
+            (snapshot) => this.handleSnapshotUpdate(fieldKey, snapshot),
+            (error) => {
+              console.error('Real-time listener error:', error);
+              this.showError('Real-time updates failed: ' + error.message);
+              this.hideLoading();
+            }
+          );
+
+          this.reportListeners.push(unsubscribe);
+        };
+
+        registerListener('controller1');
+        registerListener('controller2');
+      }
+
+            handleSnapshotUpdate(fieldKey, snapshot) {
+        if (!this.initialSnapshotState[fieldKey]) {
+          this.initialSnapshotState[fieldKey] = true;
+          if (this.initialSnapshotState.controller1 && this.initialSnapshotState.controller2) {
+            this.hideLoading();
+          }
+        }
+
+        let changed = false;
+        snapshot.docChanges().forEach((change) => {
+          const docId = change.doc.id;
+          if (change.type === 'removed') {
+            if (this.reportDocs.delete(docId)) {
+              changed = true;
+            }
+          } else {
+            this.reportDocs.set(docId, { id: docId, ...change.doc.data() });
+            changed = true;
+          }
+        });
+
+        if (changed || snapshot.docChanges().length === 0) {
+          this.reports = Array.from(this.reportDocs.values()).sort((a, b) => {
+            const dateA = this.getComparableDate(a.createdAt || a.shiftDate);
+            const dateB = this.getComparableDate(b.createdAt || b.shiftDate);
+            return dateB - dateA;
+          });
+
+          const hasActiveFilters = [
+            document.querySelector('input[placeholder="Date Range"]')?.value,
+            document.querySelector('input[placeholder="Controller"]')?.value,
+            document.querySelector('input[placeholder="Status"]')?.value
+          ].some(Boolean);
+
+          if (hasActiveFilters) {
+            this.applyFilters();
+          } else {
+            this.renderReports();
+          }
+        }
+      }
+
+      teardownReportListeners() {
+        if (!this.reportListeners.length) {
+          return;
+        }
+
+        this.reportListeners.forEach((unsubscribe) => {
+          try {
+            unsubscribe();
+          } catch (err) {
+            console.warn('Error detaching report listener:', err);
+          }
+        });
+        this.reportListeners = [];
+      }
+
+      showSkeletonLoading() {
+        const tbody = document.querySelector('tbody');
+        if (!tbody) return;
+
+        const skeletonRows = Array.from({ length: 5 }, (_, index) => `
+          <tr class="animate-pulse">
+            <td class="whitespace-nowrap px-6 py-4">
+              <div class="h-4 bg-neutral-200 rounded w-20"></div>
+            </td>
+            <td class="whitespace-nowrap px-6 py-4">
+              <div class="h-4 bg-neutral-200 rounded w-24"></div>
+            </td>
+            <td class="whitespace-nowrap px-6 py-4">
+              <div class="h-6 bg-neutral-200 rounded-full w-16"></div>
+            </td>
+            <td class="whitespace-nowrap px-6 py-4">
+              <div class="h-4 bg-neutral-200 rounded w-28"></div>
+            </td>
+            <td class="whitespace-nowrap px-6 py-4">
+              <div class="flex justify-end gap-2">
+                <div class="h-8 bg-neutral-200 rounded w-16"></div>
+                <div class="h-8 bg-neutral-200 rounded w-20"></div>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+
+        tbody.innerHTML = skeletonRows;
+      }
+
+      renderReports() {
+        const tbody = document.querySelector('tbody');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+
+        if (this.reports.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="5" class="px-6 py-8 text-center text-sm text-neutral-500">
+                No reports found. <a href="report-form.html" class="text-primary-500 hover:text-primary-700 font-medium">Create your first report</a>
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        this.reports.forEach((report, index) => {
+          const row = this.createReportRow(report, index);
+          tbody.appendChild(row);
+        });
+      }
+
+      createReportRow(report, index) {
+        const row = document.createElement('tr');
+        row.className = index % 2 === 0 ? 'hover:bg-neutral-50' : 'bg-neutral-50 hover:bg-neutral-50';
+        
+        // Format date
+        const reportDate = this.formatDate(report.shiftDate || report.createdAt);
+        
+        // Get controller names (both controller1 and controller2)
+        const controllerNames = this.getControllerNames(report);
+        
+        // Create status badge
+        const statusBadge = this.createStatusBadge(report.status);
+        
+        // Create action buttons
+        const actionButtons = this.createActionButtons(report);
+
+        row.innerHTML = `
+          <td class="whitespace-nowrap px-6 py-4 text-sm text-neutral-600">${reportDate}</td>
+          <td class="whitespace-nowrap px-6 py-4 text-sm text-neutral-600">${report.siteName || 'N/A'}</td>
+          <td class="whitespace-nowrap px-6 py-4 text-sm">${statusBadge}</td>
+          <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-neutral-800">${controllerNames}</td>
+          <td class="whitespace-nowrap px-6 py-4 text-sm">
+            <div class="flex justify-end gap-2">${actionButtons}</div>
+          </td>
+        `;
+
+        return row;
+      }
+
+      getControllerNames(report) {
+        // Get controller names from report data
+        const controller1 = report.controller1 || '';
+        const controller2 = report.controller2 || '';
+        
+        const controllers = [controller1, controller2].filter(name => name && name.trim());
+        
+        if (controllers.length === 0) {
+          return 'N/A';
+        } else if (controllers.length === 1) {
+          return controllers[0];
+        } else {
+          return controllers.join(', ');
+        }
+      }
+
+      createStatusBadge(status) {
+        const statusConfig = {
+          'draft': { class: 'bg-blue-50 text-blue-700 border border-blue-200', text: 'Draft' },
+          'submitted': { class: 'bg-yellow-50 text-yellow-700 border border-yellow-200', text: 'Pending Review' },
+          'under_review': { class: 'bg-orange-50 text-orange-700 border border-orange-200', text: 'Under Review' },
+          'approved': { class: 'bg-green-50 text-green-700 border border-green-200', text: 'Approved' },
+          'rejected': { class: 'bg-red-50 text-red-700 border border-red-200', text: 'Rejected' }
+        };
+
+        const config = statusConfig[status] || { class: 'bg-neutral-50 text-neutral-700 border border-neutral-200', text: status || 'Unknown' };
+        
+        return `<span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${config.class}">${config.text}</span>`;
+      }
+
+      getComparableDate(value) {
+        if (!value) {
+          return new Date(0);
+        }
+
+        if (value && typeof value.toDate === 'function') {
+          const date = value.toDate();
+          return isNaN(date.getTime()) ? new Date(0) : date;
+        }
+
+        const parsed = new Date(value);
+        return isNaN(parsed.getTime()) ? new Date(0) : parsed;
+      }
+
+      formatDate(dateInput) {
+        try {
+          let date;
+          if (typeof dateInput === 'string') {
+            date = new Date(dateInput);
+          } else if (dateInput && dateInput.toDate) {
+            // Firestore timestamp
+            date = dateInput.toDate();
+          } else {
+            date = new Date(dateInput);
+          }
+          
+          return date.toLocaleDateString('en-ZA', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          });
+        } catch (error) {
+          console.error('Date formatting error:', error);
+          return 'N/A';
+        }
+      }
+
+      getControllerNames(report) {
+        // Get both controller1 and controller2 names
+        const controller1 = report.controller1 || 'N/A';
+        const controller2 = report.controller2 || 'N/A';
+        
+        // If both controllers are the same or one is N/A, show just one
+        if (controller1 === controller2 || controller2 === 'N/A') {
+          return controller1;
+        }
+        
+        // If both are different and valid, show both
+        return `${controller1}, ${controller2}`;
+      }
+
+      createStatusBadge(status) {
+        const statusConfig = {
+          'draft': { class: 'bg-blue-50 text-blue-700', text: 'Draft' },
+          'submitted': { class: 'bg-yellow-50 text-yellow-700', text: 'Pending Review' },
+          'under_review': { class: 'bg-yellow-50 text-yellow-700', text: 'Under Review' },
+          'approved': { class: 'bg-green-50 text-green-700', text: 'Approved' },
+          'rejected': { class: 'bg-red-50 text-red-700', text: 'Rejected' }
+        };
+
+        const config = statusConfig[status] || { class: 'bg-gray-50 text-gray-700', text: status || 'Unknown' };
+        
+        return `<span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${config.class}">${config.text}</span>`;
+      }
+
+      createActionButtons(report) {
+        const buttons = [];
+        const reportId = report.id;
+        const status = report.status;
+
+        switch (status) {
+          case 'draft':
+            buttons.push(`
+              <a href="report-form.html?reportId=${reportId}" class="flex items-center justify-center gap-2 rounded-[12px] border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-100" data-report-id="${reportId}" data-action="edit">
+                <span class="material-symbols-outlined text-base">edit</span>
+                <span>View/Edit Draft</span>
+              </a>
+            `);
+            buttons.push(`
+              <button onclick="dashboardController.submitReport('${reportId}')" class="flex items-center justify-center gap-2 rounded-[12px] border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-100" data-report-id="${reportId}" data-action="submit">
+                <span class="material-symbols-outlined text-base">send</span>
+                <span>Send for Review</span>
+              </button>
+            `);
+            break;
+
+          case 'submitted':
+          case 'under_review':
+            buttons.push(`
+              <a href="report-form.html?reportId=${reportId}" class="flex items-center justify-center gap-2 rounded-[12px] border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-100" data-report-id="${reportId}" data-action="view">
+                <span class="material-symbols-outlined text-base">visibility</span>
+                <span>View</span>
+              </a>
+            `);
+            break;
+
+          case 'approved':
+            buttons.push(`
+              <button onclick="dashboardController.downloadPDF('${reportId}')" class="flex items-center justify-center gap-2 rounded-[12px] border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-100" data-report-id="${reportId}" data-action="download">
+                <span class="material-symbols-outlined text-base">download</span>
+                <span>Download PDF</span>
+              </button>
+            `);
+            break;
+
+          case 'rejected':
+            buttons.push(`
+              <a href="report-form.html?reportId=${reportId}" class="flex items-center justify-center gap-2 rounded-[12px] border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-100" data-report-id="${reportId}" data-action="edit">
+                <span class="material-symbols-outlined text-base">edit</span>
+                <span>View/Edit Draft</span>
+              </a>
+            `);
+            break;
+
+          default:
+            buttons.push(`
+              <a href="report-form.html?reportId=${reportId}" class="flex items-center justify-center gap-2 rounded-[12px] border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-100" data-report-id="${reportId}" data-action="view">
+                <span class="material-symbols-outlined text-base">visibility</span>
+                <span>View</span>
+              </a>
+            `);
+        }
+
+        return buttons.join('');
+      }
+
+      async submitReport(reportId) {
+        try {
+          this.showLoading('Submitting report for review...');
+          
+          const result = await enhancedReportService.submitReport(reportId);
+          
+          if (result.success) {
+            this.showSuccess('Report submitted for review successfully!');
+            // Reload reports to update status
+            await this.loadUserReports();
+          } else {
+            throw new Error(result.error);
+          }
+        } catch (error) {
+          console.error('Error submitting report:', error);
+          this.showError('Failed to submit report: ' + error.message);
+        } finally {
+          this.hideLoading();
+        }
+      }
+
+      async downloadPDF(reportId) {
+        try {
+          this.showLoading('Generating PDF...');
+          
+          // For now, we'll just show a message since PDF generation isn't implemented yet
+          this.showSuccess('PDF generation will be implemented in the next phase');
+          
+          // TODO: Implement actual PDF generation
+          // const result = await enhancedReportService.generatePDF(reportId);
+          
+        } catch (error) {
+          console.error('Error downloading PDF:', error);
+          this.showError('Failed to generate PDF: ' + error.message);
+        } finally {
+          this.hideLoading();
+        }
+      }
+
+      applyFilters() {
+        try {
+          // Get filter values
+          const dateRangeInput = document.querySelector('input[placeholder="Select Date Range"]');
+          const controllerSelect = document.querySelector('select#controller');
+          const statusSelect = document.querySelector('select#status');
+
+          const dateFilter = dateRangeInput ? dateRangeInput.value.toLowerCase() : '';
+          const controllerFilter = controllerSelect ? controllerSelect.value.toLowerCase() : '';
+          const statusFilter = statusSelect ? statusSelect.value.toLowerCase() : '';
+
+          // Filter reports
+          const filteredReports = this.reports.filter(report => {
+            const reportDate = this.formatDate(report.shiftDate || report.createdAt).toLowerCase();
+            const controllerName = this.getControllerNames(report).toLowerCase();
+            const status = (report.status || '');
+
+            // Apply filters (empty filter means show all)
+            const dateMatch = !dateFilter || reportDate.includes(dateFilter);
+            const controllerMatch = !controllerFilter || controllerFilter === 'all controllers' || controllerName.includes(controllerFilter);
+            const statusMatch = !statusFilter || statusFilter === 'all statuses' || status === statusFilter;
+
+            return dateMatch && controllerMatch && statusMatch;
+          });
+
+          console.log(`Applied filters: ${filteredReports.length} of ${this.reports.length} reports match`);
+
+          // Update display
+          this.renderFilteredReports(filteredReports);
+        } catch (error) {
+          console.error('Error applying filters:', error);
+          this.renderReports(); // Fallback to showing all reports
+        }
+      }
+
+      renderFilteredReports(reports) {
+        const tbody = document.querySelector('tbody');
+        if (!tbody) return;
+
+        // Clear existing rows
+        tbody.innerHTML = '';
+
+        if (reports.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="5" class="px-6 py-8 text-center text-sm text-neutral-500">
+                No reports match your filters.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        // Render filtered reports
+        reports.forEach((report, index) => {
+          const row = this.createReportRow(report, index);
+          tbody.appendChild(row);
+        });
+      }
+
+      showLoading(message = 'Loading...') {
+        // Create or update loading message
+        let loadingEl = document.getElementById('loadingMessage');
+        if (!loadingEl) {
+          loadingEl = document.createElement('div');
+          loadingEl.id = 'loadingMessage';
+          loadingEl.className = 'fixed top-4 right-4 z-50 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg';
+          document.body.appendChild(loadingEl);
+        }
+        loadingEl.textContent = message;
+        loadingEl.style.display = 'block';
+      }
+
+      hideLoading() {
+        const loadingEl = document.getElementById('loadingMessage');
+        if (loadingEl) {
+          loadingEl.style.display = 'none';
+        }
+      }
+
+      showSuccess(message) {
+        this.showMessage(message, 'success');
+      }
+
+      showError(message) {
+        this.showMessage(message, 'error');
+      }
+
+      showMessage(message, type) {
+        const colors = {
+          success: 'bg-green-500',
+          error: 'bg-red-500',
+          info: 'bg-blue-500'
+        };
+
+        const messageEl = document.createElement('div');
+        messageEl.className = `fixed top-4 right-4 z-50 ${colors[type] || colors.info} text-white px-4 py-2 rounded-lg shadow-lg`;
+        messageEl.textContent = message;
+        document.body.appendChild(messageEl);
+
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+          if (messageEl.parentNode) {
+            messageEl.parentNode.removeChild(messageEl);
+          }
+        }, 5000);
+      }
+    }
+
+    // Initialize dashboard when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      window.dashboardController = new DashboardController();
+    });
+  </script>
+</body></html>
+
+
+
+
+
+
+
+
+
+

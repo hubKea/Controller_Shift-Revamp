@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?display=swap&family=Inter:wght@400;500;700;900&family=Noto+Sans:wght@400;500;700;900"/>
+  <title>Shift Report Review - Thinkers Afrika</title>
+  <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <style type="text/tailwindcss">
+    :root {
+      --success: #10B981;
+      --warning: #F59E0B;
+      --primary-500: #137fec;
+    }
+    
+    .text-primary-500 {
+      color: var(--primary-500);
+    }
+    
+    .border-primary-500 {
+      border-color: var(--primary-500);
+    }
+
+    #rejection-form {
+      display: none;
+    }
+
+    #rejection-form.active {
+      display: block;
+    }
+
+    .action-button.selected {
+      outline: 2px solid var(--tw-ring-color);
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-gray-800" style='font-family: Inter, "Noto Sans", sans-serif;'>
+  <div class="flex flex-col min-h-screen">
+    <header class="sticky top-0 z-20 flex items-center justify-between whitespace-nowrap border-b border-neutral-200 bg-neutral-50 px-10 py-3">
+      <div class="flex items-center gap-8">
+        <div class="flex items-center gap-3 text-neutral-900">
+          <div class="h-8 w-8">
+            <img src="ThinkersAfrica_Logo.jpeg" alt="ThinkersAfrica Logo" class="h-full w-full object-contain" />
+          </div>
+          <h1 class="text-xl font-bold">Thinkers Afrika</h1>
+        </div>
+        <nav class="flex items-center gap-6">
+          <a class="text-sm font-bold text-primary-500 border-b-2 border-primary-500 pb-1" href="dashboard-manager.html">Dashboard</a>
+        </nav>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="text-sm text-neutral-500">Secure Review</div>
+        <button class="relative rounded-full p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700">
+          <span class="material-symbols-outlined"> notifications </span>
+        </button>
+        <div class="h-10 w-10 rounded-full bg-cover bg-center" style='background-image: url("https://ui-avatars.com/api/?name=Reviewer&background=137fec&color=fff&size=40");'></div>
+      </div>
+    </header>
+    <main class="flex-1 bg-neutral-100 px-10 py-8">
+      <div class="mx-auto max-w-7xl">
+        <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8 md:p-12 space-y-8">
+          <div class="text-center">
+            <h2 class="text-3xl font-bold mb-2 text-gray-900">Shift Report Approval</h2>
+            <p class="text-gray-500">Please review the following report and take action.</p>
+          </div>
+          <div class="space-y-6">
+            <h3 class="text-xl font-semibold text-gray-800 border-b pb-3">Report Summary</h3>
+            <div id="pageMessage" class="hidden rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium"></div>
+            <div id="summaryGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div class="bg-slate-100 p-4 rounded-xl">
+                <p class="text-sm font-medium text-gray-500">Date</p>
+                <p id="summaryDate" class="text-lg font-semibold text-gray-900">--</p>
+              </div>
+              <div class="bg-slate-100 p-4 rounded-xl">
+                <p class="text-sm font-medium text-gray-500">Shift</p>
+                <p id="summaryShift" class="text-lg font-semibold text-gray-900">--</p>
+              </div>
+              <div class="bg-slate-100 p-4 rounded-xl">
+                <p class="text-sm font-medium text-gray-500">Site</p>
+                <p id="summarySite" class="text-lg font-semibold text-gray-900">--</p>
+              </div>
+              <div class="bg-slate-100 p-4 rounded-xl">
+                <p class="text-sm font-medium text-gray-500">Controllers</p>
+                <p id="summaryControllers" class="text-lg font-semibold text-gray-900">--</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div class="bg-slate-100 p-4 rounded-xl">
+                <p class="text-sm font-medium text-gray-500">Status</p>
+                <p id="summaryStatus" class="text-lg font-semibold text-gray-900">--</p>
+              </div>
+              <div class="bg-slate-100 p-4 rounded-xl">
+                <p class="text-sm font-medium text-gray-500">Reviewing As</p>
+                <p id="reviewerIdentity" class="text-lg font-semibold text-gray-900">--</p>
+              </div>
+            </div>
+          </div>
+          <div class="space-y-6">
+            <h3 class="text-xl font-semibold text-gray-800 border-b pb-3">Incidents Summary</h3>
+            <div id="incidentsContainer" class="bg-slate-100 p-6 rounded-xl space-y-4 text-base leading-relaxed text-gray-700">
+              <p class="text-gray-500">Loading incident details...</p>
+            </div>
+          </div>
+          <div class="space-y-6 pt-6 border-t">
+            <h3 class="text-xl font-semibold text-gray-800 text-center">Take Action</h3>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button id="approve-btn" class="action-button flex items-center justify-center gap-2 w-full sm:w-auto cursor-pointer rounded-xl h-14 px-8 bg-[var(--success)] text-white text-lg font-bold transition-transform hover:scale-105 focus:ring-2 focus:ring-offset-2 ring-[var(--success)]">
+                <span class="material-symbols-outlined">check_circle</span>
+                <span>Approve</span>
+              </button>
+              <button id="reject-btn" class="action-button flex items-center justify-center gap-2 w-full sm:w-auto cursor-pointer rounded-xl h-14 px-8 bg-[var(--warning)] text-white text-lg font-bold transition-transform hover:scale-105 focus:ring-2 focus:ring-offset-2 ring-[var(--warning)]">
+                <span class="material-symbols-outlined">cancel</span>
+                <span>Reject</span>
+              </button>
+            </div>
+            <div id="rejection-form" class="mt-6 space-y-4">
+              <label class="block text-base font-medium text-gray-700" for="rejection_comment">Rejection Reason/Comment <span class="text-red-500">*</span></label>
+              <textarea id="rejection_comment" name="rejection_comment" rows="5" class="block w-full rounded-xl border-gray-300 shadow-sm focus:border-[var(--warning)] focus:ring-[var(--warning)] sm:text-base p-4" placeholder="Please provide a mandatory reason for rejecting this report..."></textarea>
+              <button id="submitRejectionBtn" type="button" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-base font-medium text-white bg-slate-800 hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-700">Submit Rejection</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <footer class="bg-white mt-12">
+      <div class="container mx-auto px-6 py-6 text-center text-gray-500 text-sm">
+        <p>&copy; 2024 Thinkers Afrika. All rights reserved.</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Firebase Services -->
+  <script type="module" src="firebase-config.js"></script>
+  <script type="module" src="js/user-service.js"></script>
+  <script type="module" src="js/enhanced-report-service.js"></script>
+  <script type="module" src="js/data-model.js"></script>
+  <script type="module" src="js/app.js"></script>
+  <script type="module">
+    import { db } from './firebase-config.js';
+    import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+    import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js';
+
+    const params = new URLSearchParams(window.location.search);
+    const state = {
+      reportId: params.get('reportId'),
+      token: params.get('token'),
+      report: null,
+      reviewer: null,
+      ready: false
+    };
+
+    const elements = {
+      message: document.getElementById('pageMessage'),
+      summaryDate: document.getElementById('summaryDate'),
+      summaryShift: document.getElementById('summaryShift'),
+      summarySite: document.getElementById('summarySite'),
+      summaryControllers: document.getElementById('summaryControllers'),
+      summaryStatus: document.getElementById('summaryStatus'),
+      reviewerIdentity: document.getElementById('reviewerIdentity'),
+      incidents: document.getElementById('incidentsContainer'),
+      approveBtn: document.getElementById('approve-btn'),
+      rejectBtn: document.getElementById('reject-btn'),
+      rejectionForm: document.getElementById('rejection-form'),
+      rejectionComment: document.getElementById('rejection_comment'),
+      rejectionSubmit: document.getElementById('submitRejectionBtn')
+    };
+
+    const messageStyles = {
+      success: 'border-green-200 bg-green-50 text-green-700',
+      error: 'border-red-200 bg-red-50 text-red-700',
+      warning: 'border-amber-200 bg-amber-50 text-amber-700',
+      info: 'border-slate-200 bg-slate-50 text-slate-700'
+    };
+
+    const statusLabels = {
+      draft: 'Draft',
+      submitted: 'Pending Review',
+      under_review: 'Under Review',
+      approved: 'Approved',
+      rejected: 'Rejected'
+    };
+
+    const statusClasses = {
+      draft: 'text-slate-700',
+      submitted: 'text-amber-600',
+      under_review: 'text-amber-600',
+      approved: 'text-green-700',
+      rejected: 'text-red-700'
+    };
+
+    let messageTimer = null;
+
+    function showMessage(text, type = 'info', persist = false) {
+      if (!elements.message) return;
+      if (messageTimer) {
+        clearTimeout(messageTimer);
+        messageTimer = null;
+      }
+      const classes = messageStyles[type] || messageStyles.info;
+      elements.message.className = `rounded-xl border px-4 py-3 text-sm font-medium ${classes}`;
+      elements.message.textContent = text;
+      elements.message.classList.remove('hidden');
+      if (!persist) {
+        messageTimer = window.setTimeout(() => {
+          elements.message.classList.add('hidden');
+        }, 6000);
+      }
+    }
+
+    function getFriendlyError(error) {
+      if (!error) return 'An unexpected error occurred. Please try again later.';
+      const code = error.code || (typeof error.message === 'string' && error.message.includes('functions/not-found') ? 'functions/not-found' : undefined);
+      switch (code) {
+        case 'functions/not-found':
+          return 'The approval service is currently unavailable. Please contact your administrator.';
+        case 'permission-denied':
+          return 'You are not authorized to take action on this report.';
+        case 'invalid-argument':
+          return error.message || 'The approval request was invalid.';
+        default:
+          return error.message || 'We could not complete that action. Please try again.';
+      }
+    }
+
+    function disableActions(disabled) {
+      const buttons = [elements.approveBtn, elements.rejectBtn, elements.rejectionSubmit];
+      buttons.forEach((btn) => {
+        if (!btn) return;
+        btn.disabled = disabled;
+        btn.classList.toggle('opacity-50', disabled);
+        btn.classList.toggle('cursor-not-allowed', disabled);
+      });
+      if (disabled) {
+        elements.rejectionSubmit?.classList.add('pointer-events-none');
+        elements.rejectionForm?.classList.remove('active');
+        elements.approveBtn?.classList.remove('selected');
+        elements.rejectBtn?.classList.remove('selected');
+      } else {
+        elements.rejectionSubmit?.classList.remove('pointer-events-none');
+      }
+    }
+
+    function formatDate(value) {
+      if (!value) return '--';
+      let date;
+      if (typeof value === 'string') {
+        date = new Date(value);
+      } else if (value && typeof value.toDate === 'function') {
+        date = value.toDate();
+      } else {
+        date = new Date(value);
+      }
+      if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+        return '--';
+      }
+      return date.toLocaleDateString('en-ZA', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    }
+
+    function formatControllers(report) {
+      const controllers = [report.controller1, report.controller2].filter(Boolean);
+      if (controllers.length === 0) return '--';
+      return controllers.join(', ');
+    }
+
+    function normalizeStatus(status) {
+      if (!status) return '';
+      return String(status).toLowerCase();
+    }
+
+    function updateStatusDisplay(status) {
+      const normalized = normalizeStatus(status);
+      const label = statusLabels[normalized] || (status ? status.toString() : 'Unknown');
+      const colorClass = statusClasses[normalized] || 'text-gray-900';
+      if (elements.summaryStatus) {
+        elements.summaryStatus.textContent = label;
+        elements.summaryStatus.className = `text-lg font-semibold ${colorClass}`;
+      }
+    }
+
+    function setReviewerIdentity(reviewer) {
+      const identity = reviewer?.name || reviewer?.email || reviewer?.meta?.key || '--';
+      if (elements.reviewerIdentity) {
+        elements.reviewerIdentity.textContent = identity;
+      }
+    }
+
+    function findReviewerContext(report, token) {
+      if (!token) return null;
+      const normalizedToken = token.trim();
+      const matches = [];
+
+      const consider = (candidate, meta = {}) => {
+        if (!candidate) return;
+        if (typeof candidate === 'string') {
+          if (candidate === normalizedToken) {
+            matches.push({ record: { token: candidate }, meta });
+          }
+          return;
+        }
+        const tokens = new Set();
+        ['token', 'approvalToken', 'reviewToken', 'linkToken'].forEach((key) => {
+          if (candidate && candidate[key]) {
+            tokens.add(candidate[key]);
+          }
+        });
+        if (Array.isArray(candidate.tokens)) {
+          candidate.tokens.forEach((value) => tokens.add(value));
+        }
+        if (Array.isArray(candidate.links)) {
+          candidate.links.forEach((link) => {
+            if (typeof link === 'string') {
+              tokens.add(link);
+            } else if (link && link.token) {
+              tokens.add(link.token);
+            }
+          });
+        }
+        if ([...tokens].some((value) => value === normalizedToken)) {
+          matches.push({ record: candidate, meta });
+        }
+      };
+
+      if (Array.isArray(report.reviewers)) {
+        report.reviewers.forEach((reviewer, index) => consider(reviewer, { source: 'reviewers', index }));
+      }
+
+      if (Array.isArray(report.reviewerTokens)) {
+        report.reviewerTokens.forEach((entry, index) => consider(entry, { source: 'reviewerTokens', index }));
+      }
+
+      const tokenMaps = [report.reviewTokens, report.approvalTokens];
+      tokenMaps.forEach((map, mapIndex) => {
+        if (map && typeof map === 'object' && !Array.isArray(map)) {
+          Object.entries(map).forEach(([key, value]) => {
+            if (typeof value === 'string') {
+              if (value === normalizedToken) {
+                matches.push({ record: { token: value, name: key }, meta: { source: `tokenMap-${mapIndex}`, key } });
+              }
+            } else {
+              consider(value, { source: `tokenMap-${mapIndex}`, key });
+            }
+          });
+        }
+      });
+
+      return matches[0] || null;
+    }
+
+    function renderReport(report) {
+      if (elements.summaryDate) elements.summaryDate.textContent = formatDate(report.reportDate || report.shiftDate || report.createdAt);
+      if (elements.summaryShift) elements.summaryShift.textContent = report.shiftType || '—';
+      if (elements.summarySite) elements.summarySite.textContent = report.siteName || report.startingDestination || '—';
+      if (elements.summaryControllers) elements.summaryControllers.textContent = formatControllers(report);
+      updateStatusDisplay(report.status);
+      renderIncidents(report);
+    }
+
+    function renderIncidents(report) {
+      if (!elements.incidents) return;
+      elements.incidents.innerHTML = '';
+
+      const sections = [];
+      const addSection = (title, lines) => {
+        if (!lines || lines.length === 0) return;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'space-y-2';
+        const heading = document.createElement('p');
+        heading.className = 'font-semibold text-gray-800';
+        heading.textContent = title;
+        wrapper.appendChild(heading);
+        const list = document.createElement('ul');
+        list.className = 'list-disc pl-5 space-y-1 text-gray-700';
+        lines.forEach((line) => {
+          if (!line) return;
+          const item = document.createElement('li');
+          item.textContent = line;
+          list.appendChild(item);
+        });
+        if (list.childElementCount > 0) {
+          wrapper.appendChild(list);
+          sections.push(wrapper);
+        }
+      };
+
+      const formatBreakdown = (entry) => {
+        if (!entry) return '';
+        const parts = [entry.truckRegNo, entry.issue, entry.status].filter(Boolean);
+        if (entry.timeReported) parts.unshift(`Reported at ${entry.timeReported}`);
+        return parts.join(' • ');
+      };
+
+      const formatPhoneCall = (entry) => {
+        if (!entry) return '';
+        const parts = [entry.driverTruckRegNo, entry.ruleViolated, entry.summary].filter(Boolean);
+        if (entry.timeOfCall) parts.unshift(`Call at ${entry.timeOfCall}`);
+        return parts.join(' • ');
+      };
+
+      const formatInvestigation = (entry) => {
+        if (!entry) return '';
+        const parts = [entry.issueIdentified, entry.findings, entry.actionTaken].filter(Boolean);
+        if (entry.timeLocation) parts.unshift(entry.timeLocation);
+        if (entry.truckRegNo) parts.unshift(entry.truckRegNo);
+        return parts.join(' • ');
+      };
+
+      const formatCommunication = (entry) => {
+        if (!entry) return '';
+        const parts = [entry.recipient, entry.subject].filter(Boolean);
+        if (entry.time) parts.unshift(entry.time);
+        return parts.join(' • ');
+      };
+
+      if (Array.isArray(report.truckUpdates)) {
+        addSection('Truck Updates', report.truckUpdates.filter((value) => typeof value === 'string' && value.trim()));
+      }
+
+      if (Array.isArray(report.breakdowns)) {
+        addSection('Breakdowns', report.breakdowns.map(formatBreakdown).filter(Boolean));
+      }
+
+      if (Array.isArray(report.phoneCalls)) {
+        addSection('Phone Calls', report.phoneCalls.map(formatPhoneCall).filter(Boolean));
+      }
+
+      if (Array.isArray(report.investigations)) {
+        addSection('Investigations', report.investigations.map(formatInvestigation).filter(Boolean));
+      }
+
+      if (Array.isArray(report.communicationLog)) {
+        addSection('Communication Log', report.communicationLog.map(formatCommunication).filter(Boolean));
+      }
+
+      const highlights = [];
+      if (report.keyHighlights) highlights.push(report.keyHighlights);
+      if (report.outstandingIssues) highlights.push(`Outstanding Issues: ${report.outstandingIssues}`);
+      if (report.incomingInfo) highlights.push(`Incoming Shift Notes: ${report.incomingInfo}`);
+      addSection('Highlights & Notes', highlights);
+
+      if (sections.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'text-gray-500';
+        empty.textContent = 'No incidents were recorded for this shift.';
+        elements.incidents.appendChild(empty);
+        return;
+      }
+
+      sections.forEach((section) => elements.incidents.appendChild(section));
+    }
+
+    function markSelection(action) {
+      elements.approveBtn?.classList.toggle('selected', action === 'approve');
+      elements.rejectBtn?.classList.toggle('selected', action === 'reject');
+      if (action === 'reject') {
+        elements.rejectionForm?.classList.add('active');
+      } else {
+        elements.rejectionForm?.classList.remove('active');
+      }
+    }
+
+    async function processDecision(action, comment = '') {
+      if (!state.ready) {
+        showMessage('Report details are still loading. Please wait a moment.', 'warning');
+        return;
+      }
+
+      disableActions(true);
+      const functions = getFunctions();
+      const callableName = action === 'approve' ? 'reviewerApproveReport' : 'reviewerRejectReport';
+      const callable = httpsCallable(functions, callableName);
+      const payload = { reportId: state.reportId, token: state.token };
+      if (action === 'reject') {
+        payload.comment = comment;
+      }
+
+      try {
+        const { data } = await callable(payload);
+        const successMessage = data?.message || (action === 'approve' ? 'Report approved successfully.' : 'Report rejected successfully.');
+        showMessage(successMessage, 'success', true);
+        state.ready = false;
+        if (state.report) {
+          state.report.status = action === 'approve' ? 'approved' : 'rejected';
+          updateStatusDisplay(state.report.status);
+        }
+        disableActions(true);
+        elements.rejectionForm?.classList.remove('active');
+        elements.rejectionComment.value = '';
+      } catch (error) {
+        console.error('Error processing review action:', error);
+        showMessage(getFriendlyError(error), 'error');
+        disableActions(false);
+      }
+    }
+
+    function initializeListeners() {
+      elements.approveBtn?.addEventListener('click', async () => {
+        markSelection('approve');
+        await processDecision('approve');
+      });
+
+      elements.rejectBtn?.addEventListener('click', () => {
+        if (!state.ready) {
+          showMessage('Report details are still loading. Please wait a moment.', 'warning');
+          return;
+        }
+        markSelection('reject');
+      });
+
+      elements.rejectionSubmit?.addEventListener('click', async () => {
+        const reason = elements.rejectionComment?.value.trim();
+        if (!reason) {
+          showMessage('Please provide a rejection reason before submitting.', 'error');
+          elements.rejectionComment?.focus();
+          return;
+        }
+        await processDecision('reject', reason);
+      });
+    }
+
+    async function loadReport() {
+      if (!state.reportId || !state.token) {
+        showMessage('Missing approval information in the link provided.', 'error', true);
+        disableActions(true);
+        return;
+      }
+
+      showMessage('Validating approval link...', 'info');
+
+      try {
+        const snapshot = await getDoc(doc(db, 'shiftReports', state.reportId));
+        if (!snapshot.exists()) {
+          showMessage('The requested report could not be found.', 'error', true);
+          disableActions(true);
+          return;
+        }
+
+        const report = { id: snapshot.id, ...snapshot.data() };
+        const reviewerMatch = findReviewerContext(report, state.token);
+
+        if (!reviewerMatch) {
+          setReviewerIdentity(null);
+          renderReport(report);
+          showMessage('This approval link is invalid or has already been revoked.', 'error', true);
+          disableActions(true);
+          return;
+        }
+
+        const reviewerStatus = normalizeStatus(reviewerMatch.record?.status || reviewerMatch.record?.action);
+        const reviewerUsed = reviewerMatch.record?.used || reviewerMatch.record?.tokenUsed || ['approved', 'rejected'].includes(reviewerStatus);
+        const reportStatus = normalizeStatus(report.status);
+
+        state.report = report;
+        state.reviewer = {
+          name: reviewerMatch.record?.name || reviewerMatch.record?.reviewerName,
+          email: reviewerMatch.record?.email || reviewerMatch.record?.reviewerEmail,
+          status: reviewerStatus,
+          used: reviewerUsed,
+          meta: reviewerMatch.meta
+        };
+
+        setReviewerIdentity(state.reviewer);
+        renderReport(report);
+
+        if (reviewerUsed || ['approved', 'rejected'].includes(reportStatus)) {
+          const message = reviewerUsed
+            ? 'This approval link has already been used.'
+            : `This report has already been ${statusLabels[reportStatus] || report.status}.`;
+          showMessage(message, 'warning', true);
+          disableActions(true);
+          return;
+        }
+
+        showMessage('Review the report details below before taking action.', 'info');
+        state.ready = true;
+        disableActions(false);
+      } catch (error) {
+        console.error('Error loading report for approval:', error);
+        showMessage('We were unable to load the report. Please try again later.', 'error', true);
+        disableActions(true);
+      }
+    }
+
+    setReviewerIdentity(null);
+    disableActions(true);
+    initializeListeners();
+    loadReport();
+  </script>
+</body>
+</html>

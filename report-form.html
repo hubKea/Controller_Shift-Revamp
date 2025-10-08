@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+  <link as="style" href="https://fonts.googleapis.com/css2?display=swap&family=Inter:wght@400;500;700;900&family=Noto+Sans:wght@400;500;700;900" onload="this.rel='stylesheet'" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+  <title>Controller Shift Report - Thinkers Afrika</title>
+  <link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.14/jspdf.plugin.autotable.min.js"></script>
+  <style type="text/tailwindcss">
+    :root {
+      --primary-500: #137fec;
+      --neutral-50: #f8fafc;
+      --neutral-100: #f1f5f9;
+      --neutral-200: #e2e8f0;
+      --neutral-300: #cbd5e1;
+      --neutral-400: #94a3b8;
+      --neutral-500: #64748b;
+      --neutral-600: #475569;
+      --neutral-700: #334155;
+      --neutral-800: #1e293b;
+      --neutral-900: #0f172a;
+      --green-50: #f0fdf4;
+      --green-100: #dcfce7;
+      --green-500: #22c55e;
+      --green-700: #15803d;
+      --yellow-50: #fefce8;
+      --yellow-100: #fef08a;
+      --yellow-500: #eab308;
+      --yellow-700: #a16207;
+      --red-50: #fef2f2;
+      --red-100: #fee2e2;
+      --red-500: #ef4444;
+      --red-700: #b91c1c;
+      --blue-50: #eff6ff;
+      --blue-100: #dbeafe;
+      --blue-500: #3b82f6;
+      --blue-700: #1d4ed8;
+    }
+    .material-symbols-outlined {
+      font-variation-settings:
+      'FILL' 0,
+      'wght' 400,
+      'GRAD' 0,
+      'opsz' 24
+    }
+  </style>
+</head>
+<body class="bg-neutral-50 text-neutral-800" style="font-family: Inter, 'Noto Sans', sans-serif;">
+  <div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+    <header class="sticky top-0 z-20 flex items-center justify-between whitespace-nowrap border-b border-neutral-200 bg-neutral-50 px-10 py-3">
+      <div class="flex items-center gap-8">
+        <div class="flex items-center gap-3 text-neutral-900">
+          <div class="h-8 w-8">
+            <img src="ThinkersAfrica_Logo.jpeg" alt="ThinkersAfrica Logo" class="h-full w-full object-contain" />
+          </div>
+          <h1 class="text-xl font-bold">Thinkers Afrika</h1>
+        </div>
+        <nav class="flex items-center gap-6">
+          <a data-dashboard-link="dashboard" class="text-sm font-bold text-primary-500 border-b-2 border-primary-500 pb-1" href="#">Dashboard</a>
+        </nav>
+      </div>
+      <div class="flex items-center gap-4">
+        <button class="relative rounded-full p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700">
+          <span class="material-symbols-outlined"> notifications </span>
+        </button>
+        <div class="h-10 w-10 rounded-full bg-cover bg-center" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD28RCrVpF_Mrb_Y6VHsI2u1sA9eBWp8y9HSHNYJhfCxci4Kf0pJ5gaWTdr3ZlOEwoi1SxQ3sxgCCqLC0ZM-LLM_v6MiXWJvsE-hTkq3A-4wrskcypnIufVE_uORyF3J0rSt_YT0JcM1GVFtqHnL0-t5h0m5ekjuyhHnu_qP0pPpVL76uOxU5ARZw8j9OPLrGBEA658oPxOweg5bQkfF2IL9n0AY1vJlDe35WqqH8avF3j00z7-LqcMGVXLkbLmzZR4gNhVm2IqEK_O");'></div>
+      </div>
+    </header>
+
+    <main class="flex-1 bg-neutral-100 px-10 py-8">
+      <div class="mx-auto max-w-7xl">
+        <!-- Message Box -->
+        <div id="message-box" class="hidden"></div>
+
+        <!-- Page Header -->
+        <div class="mb-8 flex items-center justify-between">
+          <div>
+            <h1 class="text-3xl font-bold text-neutral-900">Controller Shift Report</h1>
+            <p class="mt-1 text-sm text-neutral-600">
+              Create and submit your shift report for review and approval.
+            </p>
+          </div>
+          <a id="backToDashboardLink" data-dashboard-link="back" href="#" class="flex items-center justify-center gap-2 rounded-[12px] border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-100">
+            <span class="material-symbols-outlined">arrow_back</span>
+            <span>Back to Dashboard</span>
+          </a>
+        </div>
+
+        <!-- Report Form -->
+        <section class="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+          <form id="reportForm" class="space-y-8">
+            <!-- Basic Information -->
+            <section class="grid md:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Date</label>
+                <input id="reportDate" type="date" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Shift</label>
+                <select id="shiftType" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required>
+                  <option value="">Select Shift</option>
+                  <option>Day Shift (06:00 - 18:00)</option>
+                  <option>Night Shift (18:00 - 06:00)</option>
+                </select>
+              </div>
+
+              <div class="col-span-2">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">On-duty Controllers</label>
+                <div class="grid md:grid-cols-2 gap-4">
+                  <select id="controller1" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required>
+                    <option value="">Select Controller</option>
+                    <option>Kabelo Tshabalala</option>
+                    <option>Sipho Mahlinza</option>
+                    <option>Keamogetswe Maripane</option>
+                    <option>Gontle Ditibane</option>
+                    <option>John Macharaga</option>
+                    <option>Matshidiso Maake</option>
+                    <option>Vincent Mogashoa (manager)</option>
+                  </select>
+                  <select id="controller2" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required>
+                    <option value="">Select Controller</option>
+                    <option>Kabelo Tshabalala</option>
+                    <option>Sipho Mahlinza</option>
+                    <option>Keamogetswe Maripane</option>
+                    <option>Gontle Ditibane</option>
+                    <option>John Macharaga</option>
+                    <option>Matshidiso Maake</option>
+                    <option>Vincent Mogashoa (manager)</option>
+                  </select>
+                </div>
+              </div>
+            </section>
+
+            <!-- Logistics Information -->
+            <section class="grid md:grid-cols-3 gap-6">
+              <div class="grid md:grid-cols-2 gap-4 col-span-2">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Loading Point</label>
+                  <input id="startingDestination" type="text" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required />
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Offloading Point</label>
+                  <input id="endingDestination" type="text" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required />
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Total Trucks Scheduled</label>
+                <input id="totalTrucks" type="number" min="0" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Pending Deliveries</label>
+                <input id="pendingDeliveries" type="number" min="0" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Total Loads Dispatched</label>
+                <input id="totalLoads" type="number" min="0" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Total Loads Delivered</label>
+                <input id="loadsDelivered" type="number" min="0" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50" required readonly />
+              </div>
+
+              <div class="md:col-span-2">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Overall Shift Performance</label>
+                <select id="shiftPerformance" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required>
+                  <option value="">Select Performance</option>
+                  <option>Smooth</option>
+                  <option>Moderate Delays</option>
+                  <option>Challenging</option>
+                </select>
+              </div>
+
+              <div class="md:col-span-3">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Key Highlights / Observations</label>
+                <textarea id="keyHighlights" rows="3" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required></textarea>
+              </div>
+            </section>
+
+            <!-- Truck Updates -->
+            <section class="bg-gray-50 p-6 rounded-2xl">
+              <h3 class="text-xl font-bold text-gray-900 mb-4">Truck Updates & Logistics Flow</h3>
+              <div id="truckUpdatesContainer" class="space-y-3"></div>
+              <div class="flex space-x-3 mt-4">
+                <button id="addTruckUpdate" type="button" class="flex items-center justify-center gap-2 rounded-[12px] border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-100">
+                  <span class="material-symbols-outlined text-base">add</span>
+                  <span>Add Update</span>
+                </button>
+              </div>
+            </section>
+
+            <!-- Incidents -->
+            <section class="grid md:grid-cols-3 gap-6">
+              <div class="md:col-span-3 bg-red-50 p-6 rounded-2xl">
+                <h3 class="text-xl font-bold text-gray-900 mb-4">Breakdowns Reported</h3>
+                <div id="breakdownsContainer" class="space-y-4"></div>
+                <button id="addBreakdown" type="button" class="mt-4 flex items-center justify-center gap-2 rounded-[12px] border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-100">
+                  <span class="material-symbols-outlined text-base">add</span>
+                  <span>Add Breakdown</span>
+                </button>
+              </div>
+
+              <div class="md:col-span-3 bg-yellow-50 p-6 rounded-2xl">
+                <h3 class="text-xl font-bold text-gray-900 mb-4">Documentation of Phone Calls for Non-Adherence</h3>
+                <div id="phoneCallsContainer" class="space-y-4"></div>
+                <button id="addPhoneCall" type="button" class="mt-4 flex items-center justify-center gap-2 rounded-[12px] border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-100">
+                  <span class="material-symbols-outlined text-base">add</span>
+                  <span>Add Phone Call</span>
+                </button>
+              </div>
+
+              <div class="md:col-span-3 bg-purple-50 p-6 rounded-2xl">
+                <h3 class="text-xl font-bold text-gray-900 mb-4">Investigation Findings</h3>
+                <div id="investigationsContainer" class="space-y-4"></div>
+                <button id="addInvestigation" type="button" class="mt-4 flex items-center justify-center gap-2 rounded-[12px] border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-100">
+                  <span class="material-symbols-outlined text-base">add</span>
+                  <span>Add Investigation</span>
+                </button>
+              </div>
+            </section>
+
+            <!-- Communication Log -->
+            <section class="bg-green-50 p-6 rounded-2xl">
+              <h3 class="text-xl font-bold text-gray-900 mb-4">Communication Log</h3>
+              <div id="communicationLogContainer" class="space-y-4"></div>
+              <button id="addCommunication" type="button" class="mt-4 flex items-center justify-center gap-2 rounded-[12px] border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-100">
+                <span class="material-symbols-outlined text-base">add</span>
+                <span>Add Communication</span>
+              </button>
+            </section>
+
+            <!-- Handover & Declaration -->
+            <section class="grid md:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Outstanding Issues / Follow-ups</label>
+                <textarea id="outstandingIssues" rows="3" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required></textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Key Information for Incoming Shift</label>
+                <textarea id="incomingInfo" rows="3" class="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required></textarea>
+              </div>
+              <div class="md:col-span-2 bg-blue-50 p-6 rounded-2xl">
+                <div class="flex items-start mb-6">
+                  <input id="declarationCheckbox" type="checkbox" class="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500" required />
+                  <label class="ml-3 text-gray-700"><strong>Declaration:</strong> We certify that the information contained in this shift report is accurate and complete to the best of our knowledge.</label>
+                </div>
+                <div>
+                  <label class="block text-lg font-bold text-gray-900 mb-4">Report Reviewers</label>
+                  <div class="grid md:grid-cols-2 gap-4">
+                    <select id="reviewer1" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required>
+                      <option value="">Select Primary Reviewer</option>
+                      <option value="keamogetswe@thinkersafrika.co.za">Keamogetswe Maripane</option>
+                      <option value="sipho@thinkersafrika.co.za">Sipho Mahlinza</option>
+                      <option value="john@thinkersafrika.co.za">John Macharaga</option>
+                      <option value="matshidiso@thinkersafrika.co.za">Matshidiso Maake</option>
+                      <option value="kabelo@thinkersafrika.co.za">Kabelo Tshabalala</option>
+                      <option value="vincent@thinkersafrika.co.za">Vincent Mogoshoa</option>
+                    </select>
+                    <select id="reviewer2" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                      <option value="">Select Secondary Reviewer (Optional)</option>
+                      <option value="keamogetswe@thinkersafrika.co.za">Keamogetswe Maripane</option>
+                      <option value="sipho@thinkersafrika.co.za">Sipho Mahlinza</option>
+                      <option value="john@thinkersafrika.co.za">John Macharaga</option>
+                      <option value="matshidiso@thinkersafrika.co.za">Matshidiso Maake</option>
+                      <option value="kabelo@thinkersafrika.co.za">Kabelo Tshabalala</option>
+                      <option value="vincent@thinkersafrika.co.za">Vincent Mogoshoa</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Action Buttons -->
+            <div class="text-center pt-8 space-y-4">
+              <button id="generatePdfBtn" type="button" class="w-full md:w-1/3 flex items-center justify-center gap-2 rounded-[12px] border border-neutral-300 bg-white px-6 py-3 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-100" style="display: none;">
+                <span class="material-symbols-outlined text-base">download</span>
+                <span>Generate PDF Report</span>
+              </button>
+              <div class="flex flex-col md:flex-row gap-4 justify-center">
+                <button id="saveAsDraftBtn" type="button" class="w-full md:w-1/3 flex items-center justify-center gap-2 rounded-[12px] border border-neutral-300 bg-white px-6 py-3 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-100" disabled>
+                  <span class="material-symbols-outlined text-base">save</span>
+                  <span>Save as Draft</span>
+                </button>
+                <button id="sendForReviewBtn" type="button" class="w-full md:w-1/3 flex items-center justify-center gap-2 rounded-[12px] border border-neutral-800 bg-transparent px-6 py-3 text-sm font-semibold text-neutral-800 transition-colors hover:bg-neutral-800 hover:text-white" disabled>
+                  <span class="material-symbols-outlined text-base">send</span>
+                  <span>Send for Review</span>
+                </button>
+              </div>
+            </div>
+          </form>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Templates -->
+  <template id="truckUpdateTemplate">
+    <div class="flex items-start space-x-3">
+      <input type="text" class="flex-1 p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="(HH:MM) - Status" />
+      <button class="remove-btn flex items-center justify-center gap-2 rounded-[12px] border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-100">
+        <span class="material-symbols-outlined text-base">remove</span>
+      </button>
+    </div>
+  </template>
+
+  <template id="breakdownTemplate">
+    <div class="grid md:grid-cols-4 gap-3 p-4 border border-gray-200 rounded-xl items-end bg-white shadow-sm">
+      <input placeholder="Truck Reg No." class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" />
+      <input placeholder="Time Reported (HH:MM)" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" />
+      <input placeholder="Issue" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" />
+      <input placeholder="Status/Resolution" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" />
+      <button class="remove-btn md:col-span-4 flex items-center justify-center gap-2 rounded-[12px] border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-100">
+        <span class="material-symbols-outlined text-base">remove</span>
+        <span>Remove</span>
+      </button>
+    </div>
+  </template>
+
+  <template id="phoneCallTemplate">
+    <div class="grid md:grid-cols-4 gap-3 p-4 border border-gray-200 rounded-xl items-end bg-white shadow-sm">
+      <input placeholder="Driver/Truck Reg No." class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" />
+      <input placeholder="Rule Violated" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" />
+      <input placeholder="Time of Call (HH:MM)" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" />
+      <input placeholder="Summary" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" />
+      <button class="remove-btn md:col-span-4 flex items-center justify-center gap-2 rounded-[12px] border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-100">
+        <span class="material-symbols-outlined text-base">remove</span>
+        <span>Remove</span>
+      </button>
+    </div>
+  </template>
+
+  <template id="investigationTemplate">
+    <div class="grid md:grid-cols-5 gap-3 p-4 border border-gray-200 rounded-xl items-end bg-white shadow-sm">
+      <input placeholder="Truck Reg No." class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" />
+      <input placeholder="Issue Identified" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" />
+      <input placeholder="Time/Location" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" />
+      <input placeholder="Findings" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" />
+      <input placeholder="Action Taken" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" />
+      <button class="remove-btn md:col-span-5 flex items-center justify-center gap-2 rounded-[12px] border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-100">
+        <span class="material-symbols-outlined text-base">remove</span>
+        <span>Remove</span>
+      </button>
+    </div>
+  </template>
+
+  <template id="communicationTemplate">
+    <div class="grid md:grid-cols-3 gap-3 p-4 border border-gray-200 rounded-xl items-end bg-white shadow-sm">
+      <input placeholder="Time (HH:MM)" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" />
+      <input placeholder="Recipient" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" />
+      <input placeholder="Subject/Purpose" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" />
+      <button class="remove-btn md:col-span-3 flex items-center justify-center gap-2 rounded-[12px] border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-100">
+        <span class="material-symbols-outlined text-base">remove</span>
+        <span>Remove</span>
+      </button>
+    </div>
+  </template>
+
+  <!-- Firebase Services -->
+  <script type="module" src="firebase-config.js"></script>
+  <script type="module" src="js/user-service.js"></script>
+  <script type="module" src="js/enhanced-report-service.js"></script>
+  <script type="module" src="js/data-model.js"></script>
+  <script type="module" src="js/app.js"></script>
+
+  <script type="module">
+    import { auth } from './firebase-config.js';
+    import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+    import { userService } from './js/user-service.js';
+    import { enhancedReportService } from './js/enhanced-report-service.js';
+
+    // Form handling service
+    class FormService {
+      constructor() {
+        this.form = document.getElementById('reportForm');
+        this.containers = {
+          truckUpdates: document.getElementById('truckUpdatesContainer'),
+          breakdowns: document.getElementById('breakdownsContainer'),
+          phoneCalls: document.getElementById('phoneCallsContainer'),
+          investigations: document.getElementById('investigationsContainer'),
+          communicationLog: document.getElementById('communicationLogContainer')
+        };
+        this.templates = {
+          truckUpdate: document.getElementById('truckUpdateTemplate'),
+          breakdown: document.getElementById('breakdownTemplate'),
+          phoneCall: document.getElementById('phoneCallTemplate'),
+          investigation: document.getElementById('investigationTemplate'),
+          communication: document.getElementById('communicationTemplate')
+        };
+        this.initDefaults();
+        this.setupEventListeners();
+      }
+
+      initDefaults() {
+        // Add one default truck update
+        if (this.containers.truckUpdates.children.length === 0) {
+          this.addTruckUpdate();
+        }
+      }
+
+      setupEventListeners() {
+        // Add buttons
+        document.getElementById('addTruckUpdate').addEventListener('click', () => this.addTruckUpdate());
+        document.getElementById('addBreakdown').addEventListener('click', () => this.addBreakdown());
+        document.getElementById('addPhoneCall').addEventListener('click', () => this.addPhoneCall());
+        document.getElementById('addInvestigation').addEventListener('click', () => this.addInvestigation());
+        document.getElementById('addCommunication').addEventListener('click', () => this.addCommunication());
+
+        // Auto-calculation for loads delivered
+        const totalLoadsInput = document.getElementById('totalLoads');
+        const pendingDeliveriesInput = document.getElementById('pendingDeliveries');
+        const loadsDeliveredInput = document.getElementById('loadsDelivered');
+
+        function calculateLoadsDelivered() {
+          const totalLoads = parseInt(totalLoadsInput.value, 10) || 0;
+          const pendingDeliveries = parseInt(pendingDeliveriesInput.value, 10) || 0;
+          loadsDeliveredInput.value = totalLoads - pendingDeliveries;
+        }
+
+        totalLoadsInput.addEventListener('input', calculateLoadsDelivered);
+        pendingDeliveriesInput.addEventListener('input', calculateLoadsDelivered);
+
+        // Make loadsDelivered readonly
+        loadsDeliveredInput.readOnly = true;
+      }
+
+      addTruckUpdate(text = '') {
+        const node = this.templates.truckUpdate.content.cloneNode(true);
+        const input = node.querySelector('input');
+        input.value = text;
+        const btn = node.querySelector('.remove-btn');
+        btn.addEventListener('click', e => e.target.closest('div').remove());
+        this.containers.truckUpdates.appendChild(node);
+      }
+
+      addBreakdown(item = {}) {
+        const node = this.templates.breakdown.content.cloneNode(true);
+        const inputs = node.querySelectorAll('input');
+        inputs[0].value = item.truckRegNo || '';
+        inputs[1].value = item.timeReported || '';
+        inputs[2].value = item.issue || '';
+        inputs[3].value = item.status || '';
+        node.querySelector('.remove-btn').addEventListener('click', e => e.target.closest('.grid').remove());
+        this.containers.breakdowns.appendChild(node);
+      }
+
+      addPhoneCall(item = {}) {
+        const node = this.templates.phoneCall.content.cloneNode(true);
+        const inputs = node.querySelectorAll('input');
+        inputs[0].value = item.driverTruckRegNo || '';
+        inputs[1].value = item.ruleViolated || '';
+        inputs[2].value = item.timeOfCall || '';
+        inputs[3].value = item.summary || '';
+        node.querySelector('.remove-btn').addEventListener('click', e => e.target.closest('.grid').remove());
+        this.containers.phoneCalls.appendChild(node);
+      }
+
+      addInvestigation(item = {}) {
+        const node = this.templates.investigation.content.cloneNode(true);
+        const inputs = node.querySelectorAll('input');
+        inputs[0].value = item.truckRegNo || '';
+        inputs[1].value = item.issueIdentified || '';
+        inputs[2].value = item.timeLocation || '';
+        inputs[3].value = item.findings || '';
+        inputs[4].value = item.actionTaken || '';
+        node.querySelector('.remove-btn').addEventListener('click', e => e.target.closest('.grid').remove());
+        this.containers.investigations.appendChild(node);
+      }
+
+      addCommunication(item = {}) {
+        const node = this.templates.communication.content.cloneNode(true);
+        const inputs = node.querySelectorAll('input');
+        inputs[0].value = item.time || '';
+        inputs[1].value = item.recipient || '';
+        inputs[2].value = item.subject || '';
+        node.querySelector('.remove-btn').addEventListener('click', e => e.target.closest('.grid').remove());
+        this.containers.communicationLog.appendChild(node);
+      }
+
+      getFormData() {
+        const getVal = id => document.getElementById(id)?.value || '';
+        
+        const truckUpdates = Array.from(this.containers.truckUpdates.querySelectorAll('input'))
+          .map(i => i.value.trim()).filter(v => v);
+
+        const breakdowns = Array.from(this.containers.breakdowns.querySelectorAll('.grid'))
+          .map(div => Array.from(div.querySelectorAll('input')).map(i => i.value.trim()))
+          .filter(arr => arr.some(v => v))
+          .map(arr => ({ truckRegNo: arr[0], timeReported: arr[1], issue: arr[2], status: arr[3] }));
+
+        const phoneCalls = Array.from(this.containers.phoneCalls.querySelectorAll('.grid'))
+          .map(div => Array.from(div.querySelectorAll('input')).map(i => i.value.trim()))
+          .filter(arr => arr.some(v => v))
+          .map(arr => ({ driverTruckRegNo: arr[0], ruleViolated: arr[1], timeOfCall: arr[2], summary: arr[3] }));
+
+        const investigations = Array.from(this.containers.investigations.querySelectorAll('.grid'))
+          .map(div => Array.from(div.querySelectorAll('input')).map(i => i.value.trim()))
+          .filter(arr => arr.some(v => v))
+          .map(arr => ({ truckRegNo: arr[0], issueIdentified: arr[1], timeLocation: arr[2], findings: arr[3], actionTaken: arr[4] }));
+
+        const communicationLog = Array.from(this.containers.communicationLog.querySelectorAll('.grid'))
+          .map(div => Array.from(div.querySelectorAll('input')).map(i => i.value.trim()))
+          .filter(arr => arr.some(v => v))
+          .map(arr => ({ time: arr[0], recipient: arr[1], subject: arr[2] }));
+
+        return {
+          reportDate: getVal('reportDate'),
+          shiftType: getVal('shiftType'),
+          controller1: getVal('controller1'),
+          controller2: getVal('controller2'),
+          startingDestination: getVal('startingDestination'),
+          endingDestination: getVal('endingDestination'),
+          totalTrucks: getVal('totalTrucks'),
+          totalLoads: getVal('totalLoads'),
+          loadsDelivered: getVal('loadsDelivered'),
+          pendingDeliveries: getVal('pendingDeliveries'),
+          shiftPerformance: getVal('shiftPerformance'),
+          keyHighlights: getVal('keyHighlights'),
+          truckUpdates, breakdowns, phoneCalls, investigations, communicationLog,
+          outstandingIssues: getVal('outstandingIssues'),
+          incomingInfo: getVal('incomingInfo'),
+          reviewer1: getVal('reviewer1'),
+          reviewer2: getVal('reviewer2')
+        };
+      }
+
+      setFormData(data) {
+        const setVal = (id, val = '') => {
+          const el = document.getElementById(id);
+          if (el) el.value = val;
+        };
+        setVal('reportDate', data.reportDate || '');
+        setVal('shiftType', data.shiftType || '');
+        setVal('controller1', data.controller1 || '');
+        setVal('controller2', data.controller2 || '');
+        setVal('startingDestination', data.startingDestination || '');
+        setVal('endingDestination', data.endingDestination || '');
+        setVal('totalTrucks', data.totalTrucks || '');
+        setVal('totalLoads', data.totalLoads || '');
+        setVal('loadsDelivered', data.loadsDelivered || '');
+        setVal('pendingDeliveries', data.pendingDeliveries || '');
+        setVal('shiftPerformance', data.shiftPerformance || '');
+        setVal('keyHighlights', data.keyHighlights || '');
+        setVal('outstandingIssues', data.outstandingIssues || '');
+        setVal('incomingInfo', data.incomingInfo || '');
+        setVal('reviewer1', data.reviewer1 || '');
+        setVal('reviewer2', data.reviewer2 || '');
+
+        // Clear dynamic sections
+        this.containers.truckUpdates.innerHTML = '';
+        this.containers.breakdowns.innerHTML = '';
+        this.containers.phoneCalls.innerHTML = '';
+        this.containers.investigations.innerHTML = '';
+        this.containers.communicationLog.innerHTML = '';
+
+        // Add data
+        (data.truckUpdates || []).forEach(t => this.addTruckUpdate(t));
+        (data.breakdowns || []).forEach(b => this.addBreakdown(b));
+        (data.phoneCalls || []).forEach(p => this.addPhoneCall(p));
+        (data.investigations || []).forEach(i => this.addInvestigation(i));
+        (data.communicationLog || []).forEach(c => this.addCommunication(c));
+      }
+    }
+
+    // Initialize form service
+    const formService = new FormService();
+
+    // Authentication and form handling
+    let currentUser = null;
+    let currentUserRole = 'controller';
+    let roleResolved = false;
+    let pendingDashboardRedirect = false;
+    const dashboardLinks = document.querySelectorAll('[data-dashboard-link]');
+    const backToDashboardLink = document.getElementById('backToDashboardLink');
+
+    const getDashboardUrl = () => currentUserRole === 'manager' ? 'dashboard-manager.html' : 'dashboard-controller.html';
+
+    function updateDashboardLinks() {
+      const destination = getDashboardUrl();
+      dashboardLinks.forEach((link) => {
+        if (link) {
+          link.setAttribute('href', destination);
+        }
+      });
+    }
+
+    function redirectToDashboard() {
+      if (!roleResolved) {
+        pendingDashboardRedirect = true;
+        showMessage('Preparing your dashboard...', 'info');
+        return;
+      }
+      pendingDashboardRedirect = false;
+      window.location.href = getDashboardUrl();
+    }
+
+    if (backToDashboardLink) {
+      backToDashboardLink.addEventListener('click', (event) => {
+        if (!roleResolved) {
+          event.preventDefault();
+          redirectToDashboard();
+          return;
+        }
+
+        if (event.defaultPrevented || event.button === 1 || event.metaKey || event.ctrlKey || event.shiftKey) {
+          return;
+        }
+
+        event.preventDefault();
+        redirectToDashboard();
+      });
+    }
+
+
+
+    // Use Authentication Guard
+    (async () => {
+      try {
+        console.log('🛡️ Report Form: Using Authentication Guard...');
+        
+        const authResult = await userService.initializeAuthGuard();
+        
+        if (authResult.authenticated) {
+          console.log('✅ Report Form: Authenticated user:', authResult.user.email, 'Role:', authResult.role);
+          currentUser = authResult.user;
+          currentUserRole = authResult.role;
+          
+          updateDashboardLinks();
+          roleResolved = true;
+
+          // Check if we're in view mode (reportId in URL)
+          const urlParams = new URLSearchParams(window.location.search);
+          const reportId = urlParams.get('reportId');
+          
+          if (reportId) {
+            await loadReportForView(reportId);
+          } else {
+            // Only enable buttons if authenticated and not in view mode
+            const sendForReviewBtn = document.getElementById('sendForReviewBtn');
+            const saveAsDraftBtn = document.getElementById('saveAsDraftBtn');
+            
+            if (sendForReviewBtn) {
+              sendForReviewBtn.disabled = false;
+            }
+            if (saveAsDraftBtn) {
+              saveAsDraftBtn.disabled = false;
+            }
+          }
+
+          if (pendingDashboardRedirect) {
+            redirectToDashboard();
+            return;
+          }
+
+          const userAvatar = document.querySelector('.h-10.w-10.rounded-full');
+          if (userAvatar) {
+            const displayName = authResult.user.displayName || authResult.user.email.split('@')[0];
+            userAvatar.style.backgroundImage = `url("https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=137fec&color=fff&size=40")`;
+          }
+
+          console.log('Report form initialized for user:', authResult.user.email);
+        } else {
+          console.log('❌ Report Form: User not authenticated, auth guard will redirect');
+          // Auth guard will handle the redirect
+        }
+      } catch (error) {
+        console.error('❌ Report Form: Error during authentication:', error);
+      }
+    })();
+
+    // Save as draft handler
+
+    document.getElementById('saveAsDraftBtn').addEventListener('click', async () => {
+
+      await saveReport('draft');
+
+    });
+
+
+
+    // Send for review handler
+
+    document.getElementById('sendForReviewBtn').addEventListener('click', async () => {
+
+      await saveReport('under_review');
+
+    });
+
+
+
+    // Common save function
+
+    async function saveReport(status) {
+
+      try {
+
+        if (!currentUser) {
+
+          showMessage('You must be signed in before saving this report.', 'error');
+
+          return;
+
+        }
+
+
+
+        const data = formService.getFormData();
+
+        const isDraft = status === 'draft';
+
+        const isReview = status === 'under_review';
+
+
+
+        if (isDraft) {
+
+          if (!data.reportDate && !data.shiftType && !data.controller1) {
+
+            showMessage('Please fill in at least the basic report information.', 'error');
+
+            return;
+
+          }
+
+        }
+
+
+
+        if (isReview) {
+
+          if (!data.reportDate || !data.shiftType || !data.controller1 || !data.controller2) {
+
+            showMessage('Please complete required fields: Date, Shift, and Controllers.', 'error');
+
+            return;
+
+          }
+
+
+
+          const primaryReviewerSelect = document.getElementById('reviewer1');
+
+          const secondaryReviewerSelect = document.getElementById('reviewer2');
+
+          const reviewerEntries = [];
+
+
+
+          const collectReviewer = (select, { required = false, role = 'reviewer' } = {}) => {
+
+            if (!select) return;
+
+            const email = (select.value || '').trim();
+
+            if (!email) return;
+
+            const name = select.selectedOptions && select.selectedOptions[0]
+
+              ? select.selectedOptions[0].text.trim()
+
+              : email;
+
+            reviewerEntries.push({
+
+              email: email.toLowerCase(),
+
+              name,
+
+              required,
+
+              role,
+
+              status: 'pending',
+
+              approved: false,
+
+              rejected: false
+
+            });
+
+          };
+
+
+
+          collectReviewer(primaryReviewerSelect, { required: true, role: 'primary' });
+
+          collectReviewer(secondaryReviewerSelect, { required: false, role: 'secondary' });
+
+
+
+          if (reviewerEntries.length === 0) {
+
+            showMessage('Please assign at least one reviewer before sending for review.', 'error');
+
+            return;
+
+          }
+
+
+
+          data.reviewers = reviewerEntries;
+
+        }
+
+
+
+        const now = new Date();
+
+        const timestamp = now.toISOString();
+        const nowIso = timestamp;
+
+        const additionalFields = {
+
+          updatedAt: timestamp
+
+        };
+
+
+
+        if (isReview) {
+
+          additionalFields.submittedAt = timestamp;
+
+          additionalFields.submittedBy = currentUser.uid;
+
+          additionalFields.reviewRequestedAt = timestamp;
+
+        }
+
+
+
+        const result = await enhancedReportService.createReport(data, {
+
+          status,
+
+          additionalFields
+
+        });
+
+
+
+        if (result.success) {
+
+          if (isDraft) {
+
+            showMessage('Report saved as draft successfully!', 'success');
+
+          } else if (isReview) {
+
+            showMessage('Report has been successfully submitted for review. The reviewers have been notified.', 'success');
+
+          } else {
+
+            showMessage('Report saved successfully.', 'success');
+
+          }
+
+
+
+          formService.setFormData({});
+
+        } else {
+
+          throw new Error(result.error);
+
+        }
+
+      } catch (error) {
+
+        console.error('Error saving report:', error);
+
+        showMessage('Error saving report: ' + (error.message || error), 'error');
+
+      }
+
+    }
+
+    // Message display function
+    function showMessage(message, type = 'info') {
+      const messageBox = document.getElementById('message-box');
+      if (messageBox) {
+        messageBox.style.display = 'block';
+        messageBox.textContent = message;
+        const classes = {
+          success: 'bg-green-100 text-green-700 border border-green-200',
+          error: 'bg-red-100 text-red-700 border border-red-200',
+          info: 'bg-blue-100 text-blue-700 border border-blue-200'
+        };
+        messageBox.className = `p-3 rounded-xl mb-4 font-semibold ${classes[type] || classes.info}`;
+        
+        setTimeout(() => {
+          messageBox.style.display = 'none';
+        }, 5000);
+      }
+    }
+
+    // Load report for view mode
+    async function loadReportForView(reportId) {
+      try {
+        showMessage('Loading report...', 'info');
+        
+        // Fetch report from Firestore
+        const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+        const { db } = await import('./firebase-config.js');
+        
+        const reportDoc = await getDoc(doc(db, 'shiftReports', reportId));
+        
+        if (!reportDoc.exists()) {
+          showMessage('Report not found', 'error');
+          return;
+        }
+        
+        const reportData = reportDoc.data();
+        
+        // Set view mode
+        window.isViewMode = true;
+        
+        // Disable form for view mode
+        disableFormForView();
+        
+        // Populate form with report data
+        formService.setFormData(reportData);
+        
+        // Update page title
+        document.title = `View Report - ${reportData.reportDate || 'Unknown Date'} - Thinkers Afrika`;
+        
+        showMessage('Report loaded successfully', 'success');
+        
+      } catch (error) {
+        console.error('Error loading report:', error);
+        showMessage('Error loading report: ' + error.message, 'error');
+      }
+    }
+
+    // Disable form for view mode
+    function disableFormForView() {
+      // Disable all form inputs
+      const inputs = document.querySelectorAll('input, select, textarea, button');
+      inputs.forEach(input => {
+        if (input.id !== 'sendForReviewBtn' && input.id !== 'generatePdfBtn' && input.id !== 'saveAsDraftBtn') {
+          input.disabled = true;
+        }
+      });
+      
+      // Hide action buttons
+      const sendForReviewBtn = document.getElementById('sendForReviewBtn');
+      const saveAsDraftBtn = document.getElementById('saveAsDraftBtn');
+      
+      if (sendForReviewBtn) {
+        sendForReviewBtn.style.display = 'none';
+      }
+      if (saveAsDraftBtn) {
+        saveAsDraftBtn.style.display = 'none';
+      }
+      
+      // Update page header
+      const pageTitle = document.querySelector('h1');
+      if (pageTitle) {
+        pageTitle.textContent = 'View Shift Report';
+      }
+      
+      const pageDescription = document.querySelector('p');
+      if (pageDescription) {
+        pageDescription.textContent = 'Viewing report in read-only mode.';
+      }
+    }
+
+    // Make form service available globally
+    window.FormService = formService;
+  </script>
+</body>
+</html>

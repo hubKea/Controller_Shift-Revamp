@@ -283,6 +283,13 @@ class UserService {
     }
   }
 
+  /**
+   * Alias for signOut() to support existing code that still calls logout().
+   */
+  async logout() {
+    return this.signOut();
+  }
+
   // Create new user (admin function) - REMOVED CLIENT-SIDE WRITES
   async createUser(email, password, userData) {
     try {

@@ -303,37 +303,6 @@
         }
       }
 
-      initializeEventListeners() {
-        // Create New Report button
-        const createReportBtn = document.querySelector('a[href="report-form.html"]');
-        if (createReportBtn) {
-          createReportBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            window.location.href = 'report-form.html';
-          });
-        }
-
-        // Search and filter inputs
-        this.initializeFilters();
-      }
-
-      initializeFilters() {
-        const dateInput = document.querySelector('input[placeholder="Date Range"]');
-        const controllerInput = document.querySelector('input[placeholder="Controller"]');
-        const statusInput = document.querySelector('input[placeholder="Status"]');
-
-        // Add event listeners for filtering
-        if (dateInput) {
-          dateInput.addEventListener('input', () => this.applyFilters());
-        }
-        if (controllerInput) {
-          controllerInput.addEventListener('input', () => this.applyFilters());
-        }
-        if (statusInput) {
-          statusInput.addEventListener('input', () => this.applyFilters());
-        }
-      }
-
       async loadAllReports() {
         try {
           this.showSkeletonLoading();
@@ -838,12 +807,6 @@
           const row = this.createReportRow(report, index);
           tbody.appendChild(row);
         });
-      }
-
-      setupRealtimeUpdates() {
-        // Set up real-time listener for report updates
-        // This will automatically update the dashboard when reports change
-        // TODO: Implement real-time updates using onSnapshot
       }
 
       showLoading(message = 'Loading...') {

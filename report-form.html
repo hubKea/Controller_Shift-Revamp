@@ -112,26 +112,8 @@
               <div class="col-span-2">
                 <label class="block text-sm font-semibold text-gray-700 mb-2">On-duty Controllers</label>
                 <div class="grid md:grid-cols-2 gap-4">
-                  <select id="controller1" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required>
-                    <option value="">Select Controller</option>
-                    <option>Kabelo Tshabalala</option>
-                    <option>Sipho Mahlinza</option>
-                    <option>Keamogetswe Maripane</option>
-                    <option>Gontle Ditibane</option>
-                    <option>John Macharaga</option>
-                    <option>Matshidiso Maake</option>
-                    <option>Vincent Mogashoa (manager)</option>
-                  </select>
-                  <select id="controller2" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required>
-                    <option value="">Select Controller</option>
-                    <option>Kabelo Tshabalala</option>
-                    <option>Sipho Mahlinza</option>
-                    <option>Keamogetswe Maripane</option>
-                    <option>Gontle Ditibane</option>
-                    <option>John Macharaga</option>
-                    <option>Matshidiso Maake</option>
-                    <option>Vincent Mogashoa (manager)</option>
-                  </select>
+                  <select id="controller1" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required></select>
+                  <select id="controller2" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required></select>
                 </div>
               </div>
             </section>
@@ -251,24 +233,8 @@
                 <div>
                   <label class="block text-lg font-bold text-gray-900 mb-4">Report Reviewers</label>
                   <div class="grid md:grid-cols-2 gap-4">
-                    <select id="reviewer1" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required>
-                      <option value="">Select Primary Reviewer</option>
-                      <option value="keamogetswe@thinkersafrika.co.za">Keamogetswe Maripane</option>
-                      <option value="sipho@thinkersafrika.co.za">Sipho Mahlinza</option>
-                      <option value="john@thinkersafrika.co.za">John Macharaga</option>
-                      <option value="matshidiso@thinkersafrika.co.za">Matshidiso Maake</option>
-                      <option value="kabelo@thinkersafrika.co.za">Kabelo Tshabalala</option>
-                      <option value="vincent@thinkersafrika.co.za">Vincent Mogoshoa</option>
-                    </select>
-                    <select id="reviewer2" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
-                      <option value="">Select Secondary Reviewer (Optional)</option>
-                      <option value="keamogetswe@thinkersafrika.co.za">Keamogetswe Maripane</option>
-                      <option value="sipho@thinkersafrika.co.za">Sipho Mahlinza</option>
-                      <option value="john@thinkersafrika.co.za">John Macharaga</option>
-                      <option value="matshidiso@thinkersafrika.co.za">Matshidiso Maake</option>
-                      <option value="kabelo@thinkersafrika.co.za">Kabelo Tshabalala</option>
-                      <option value="vincent@thinkersafrika.co.za">Vincent Mogoshoa</option>
-                    </select>
+                    <select id="reviewer1" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required></select>
+                    <select id="reviewer2" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"></select>
                   </div>
                 </div>
               </div>
@@ -367,10 +333,79 @@
   <script type="module" src="js/app.js"></script>
 
   <script type="module">
-    import { auth } from './firebase-config.js';
+    import { auth, db } from './firebase-config.js';
     import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+    import { collection, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
     import { userService } from './js/user-service.js';
     import { enhancedReportService } from './js/enhanced-report-service.js';
+
+    const localeCollator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
+
+    function rememberSelectPreference(select, { uid = '', email = '', label = '' } = {}) {
+      if (!select) return;
+      select.dataset.preferredUid = uid;
+      select.dataset.preferredEmail = email ? email.toLowerCase() : '';
+      select.dataset.preferredLabel = label ? label.toLowerCase() : '';
+    }
+
+    function applyPreferredSelectValue(select) {
+      if (!select) return;
+
+      const preferredUid = select.dataset.preferredUid;
+      if (preferredUid) {
+        select.value = preferredUid;
+        if (select.value === preferredUid) return;
+      }
+
+      const preferredEmail = select.dataset.preferredEmail;
+      if (preferredEmail) {
+        const matchByEmail = Array.from(select.options).find(option => (option.dataset.email || '').toLowerCase() === preferredEmail);
+        if (matchByEmail) {
+          select.value = matchByEmail.value;
+          return;
+        }
+      }
+
+      const preferredLabel = select.dataset.preferredLabel;
+      if (preferredLabel) {
+        const matchByLabel = Array.from(select.options).find(option => option.text.trim().toLowerCase() === preferredLabel);
+        if (matchByLabel) {
+          select.value = matchByLabel.value;
+          return;
+        }
+      }
+
+      select.value = '';
+    }
+
+    function ensureSelectPreferenceListener(select) {
+      if (!select || select.dataset.preferenceListenerAttached === 'true') return;
+      select.addEventListener('change', () => {
+        const selectedOption = select.selectedOptions && select.selectedOptions[0];
+        rememberSelectPreference(select, {
+          uid: select.value || '',
+          email: selectedOption?.dataset.email || '',
+          label: selectedOption ? selectedOption.text.trim() : ''
+        });
+      });
+      select.dataset.preferenceListenerAttached = 'true';
+    }
+
+    function getSelectDetailsById(id) {
+      const select = document.getElementById(id);
+      const selectedOption = select?.selectedOptions && select.selectedOptions[0];
+      const uid = select?.value || '';
+      const label = selectedOption ? selectedOption.text.trim() : '';
+      const email = selectedOption?.dataset.email?.trim() || '';
+      return { uid, label, email };
+    }
+
+    function setSelectPreference(id, preference = {}) {
+      const select = document.getElementById(id);
+      if (!select) return;
+      rememberSelectPreference(select, preference);
+      applyPreferredSelectValue(select);
+    }
 
     // Form handling service
     class FormService {
@@ -482,7 +517,17 @@
 
       getFormData() {
         const getVal = id => document.getElementById(id)?.value || '';
-        
+
+        const controller1Details = getSelectDetailsById('controller1');
+        const controller2Details = getSelectDetailsById('controller2');
+        const reviewer1Details = getSelectDetailsById('reviewer1');
+        const reviewer2Details = getSelectDetailsById('reviewer2');
+
+        rememberSelectPreference(document.getElementById('controller1'), controller1Details);
+        rememberSelectPreference(document.getElementById('controller2'), controller2Details);
+        rememberSelectPreference(document.getElementById('reviewer1'), reviewer1Details);
+        rememberSelectPreference(document.getElementById('reviewer2'), reviewer2Details);
+
         const truckUpdates = Array.from(this.containers.truckUpdates.querySelectorAll('input'))
           .map(i => i.value.trim()).filter(v => v);
 
@@ -509,8 +554,10 @@
         return {
           reportDate: getVal('reportDate'),
           shiftType: getVal('shiftType'),
-          controller1: getVal('controller1'),
-          controller2: getVal('controller2'),
+          controller1: controller1Details.label,
+          controller1Id: controller1Details.uid,
+          controller2: controller2Details.label,
+          controller2Id: controller2Details.uid,
           startingDestination: getVal('startingDestination'),
           endingDestination: getVal('endingDestination'),
           totalTrucks: getVal('totalTrucks'),
@@ -522,8 +569,12 @@
           truckUpdates, breakdowns, phoneCalls, investigations, communicationLog,
           outstandingIssues: getVal('outstandingIssues'),
           incomingInfo: getVal('incomingInfo'),
-          reviewer1: getVal('reviewer1'),
-          reviewer2: getVal('reviewer2')
+          reviewer1: reviewer1Details.email || reviewer1Details.uid,
+          reviewer1Id: reviewer1Details.uid,
+          reviewer1Name: reviewer1Details.label,
+          reviewer2: reviewer2Details.email || reviewer2Details.uid,
+          reviewer2Id: reviewer2Details.uid,
+          reviewer2Name: reviewer2Details.label
         };
       }
 
@@ -534,8 +585,6 @@
         };
         setVal('reportDate', data.reportDate || '');
         setVal('shiftType', data.shiftType || '');
-        setVal('controller1', data.controller1 || '');
-        setVal('controller2', data.controller2 || '');
         setVal('startingDestination', data.startingDestination || '');
         setVal('endingDestination', data.endingDestination || '');
         setVal('totalTrucks', data.totalTrucks || '');
@@ -546,8 +595,32 @@
         setVal('keyHighlights', data.keyHighlights || '');
         setVal('outstandingIssues', data.outstandingIssues || '');
         setVal('incomingInfo', data.incomingInfo || '');
-        setVal('reviewer1', data.reviewer1 || '');
-        setVal('reviewer2', data.reviewer2 || '');
+
+        const reviewerEntries = Array.isArray(data.reviewers) ? data.reviewers : [];
+        const primaryReviewer = reviewerEntries.find(r => r.role === 'primary') || reviewerEntries.find(r => r.required);
+        const secondaryReviewer = reviewerEntries.find(r => r.role === 'secondary');
+
+        setSelectPreference('controller1', {
+          uid: data.controller1Id || '',
+          label: data.controller1 || ''
+        });
+
+        setSelectPreference('controller2', {
+          uid: data.controller2Id || '',
+          label: data.controller2 || ''
+        });
+
+        setSelectPreference('reviewer1', {
+          uid: data.reviewer1Id || primaryReviewer?.uid || '',
+          email: data.reviewer1 || primaryReviewer?.email || '',
+          label: data.reviewer1Name || primaryReviewer?.name || ''
+        });
+
+        setSelectPreference('reviewer2', {
+          uid: data.reviewer2Id || secondaryReviewer?.uid || '',
+          email: data.reviewer2 || secondaryReviewer?.email || '',
+          label: data.reviewer2Name || secondaryReviewer?.name || ''
+        });
 
         // Clear dynamic sections
         this.containers.truckUpdates.innerHTML = '';
@@ -567,6 +640,121 @@
 
     // Initialize form service
     const formService = new FormService();
+
+    async function populateUserLists() {
+      const controllerSelects = [
+        { select: document.getElementById('controller1'), placeholder: 'Select Controller' },
+        { select: document.getElementById('controller2'), placeholder: 'Select Controller' }
+      ];
+
+      const reviewerSelects = [
+        { select: document.getElementById('reviewer1'), placeholder: 'Select Primary Reviewer' },
+        { select: document.getElementById('reviewer2'), placeholder: 'Select Secondary Reviewer (Optional)' }
+      ];
+
+      const allSelects = [...controllerSelects, ...reviewerSelects].map(item => item.select).filter(Boolean);
+      if (!allSelects.length) return;
+
+      const setLoadingState = (select, message) => {
+        if (!select) return;
+        select.innerHTML = '';
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = message;
+        select.appendChild(option);
+      };
+
+      controllerSelects.forEach(({ select }) => setLoadingState(select, 'Loading controllers...'));
+      reviewerSelects.forEach(({ select }) => setLoadingState(select, 'Loading reviewers...'));
+
+      try {
+        const usersRef = collection(db, 'users');
+        const rolesToLoad = ['controller', 'manager', 'reviewer'];
+        const snapshot = await getDocs(query(usersRef, where('role', 'in', rolesToLoad)));
+
+        const controllers = [];
+        const reviewerMap = new Map();
+
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data() || {};
+          if (data.isActive === false) return;
+
+          const displayName = (data.displayName || '').trim();
+          const email = (data.email || '').trim();
+          const role = data.role || '';
+          const uid = docSnap.id;
+
+          const label = displayName || email || 'Unnamed User';
+          const user = { uid, displayName, email, label, role };
+
+          if (role === 'controller') {
+            controllers.push(user);
+          }
+
+          if (role === 'manager' || role === 'controller' || role === 'reviewer') {
+            reviewerMap.set(uid, user);
+          }
+        });
+
+        controllers.sort((a, b) => localeCollator.compare(a.label, b.label));
+        const reviewers = Array.from(reviewerMap.values()).sort((a, b) => localeCollator.compare(a.label, b.label));
+
+        const populateSelect = (select, users, placeholderText) => {
+          if (!select) return;
+          select.innerHTML = '';
+          const placeholderOption = document.createElement('option');
+          placeholderOption.value = '';
+          placeholderOption.textContent = placeholderText;
+          select.appendChild(placeholderOption);
+
+          users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.uid;
+            option.textContent = user.label;
+            if (user.email) {
+              option.dataset.email = user.email;
+            }
+            option.dataset.role = user.role || '';
+            select.appendChild(option);
+          });
+
+          ensureSelectPreferenceListener(select);
+          applyPreferredSelectValue(select);
+        };
+
+        controllerSelects.forEach(({ select, placeholder }) => populateSelect(select, controllers, placeholder));
+        reviewerSelects.forEach(({ select, placeholder }) => populateSelect(select, reviewers, placeholder));
+
+        if (!controllers.length) {
+          console.warn('No active controllers found in Firestore users collection.');
+        }
+        if (!reviewers.length) {
+          console.warn('No reviewer candidates found in Firestore users collection.');
+        }
+      } catch (error) {
+        console.error('Failed to load controller/reviewer lists:', error);
+
+        controllerSelects.forEach(({ select }) => {
+          if (!select) return;
+          select.innerHTML = '';
+          const option = document.createElement('option');
+          option.value = '';
+          option.textContent = 'Unable to load controllers';
+          select.appendChild(option);
+        });
+
+        reviewerSelects.forEach(({ select }) => {
+          if (!select) return;
+          select.innerHTML = '';
+          const option = document.createElement('option');
+          option.value = '';
+          option.textContent = 'Unable to load reviewers';
+          select.appendChild(option);
+        });
+
+        showMessage('Could not load user lists. Please refresh or try again later.', 'error');
+      }
+    }
 
     // Authentication and form handling
     let currentUser = null;
@@ -630,6 +818,8 @@
           
           updateDashboardLinks();
           roleResolved = true;
+
+          await populateUserLists();
 
           // Check if we're in view mode (reportId in URL)
           const urlParams = new URLSearchParams(window.location.search);
@@ -753,17 +943,25 @@
 
             if (!select) return;
 
-            const email = (select.value || '').trim();
+            const selectedOption = select.selectedOptions && select.selectedOptions[0];
 
-            if (!email) return;
+            if (!selectedOption) return;
 
-            const name = select.selectedOptions && select.selectedOptions[0]
+            const uid = (selectedOption.value || '').trim();
 
-              ? select.selectedOptions[0].text.trim()
+            if (!uid) return;
 
-              : email;
+            const email = (selectedOption.dataset.email || '').trim();
+
+            const name = selectedOption.text
+
+              ? selectedOption.text.trim()
+
+              : email || uid;
 
             reviewerEntries.push({
+
+              uid,
 
               email: email.toLowerCase(),
 

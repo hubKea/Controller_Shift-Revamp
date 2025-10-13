@@ -323,6 +323,176 @@ function buildReviewEmailText(report, reviewerName, link) {
   ].join('\\n');
 }
 
+const userIdentityCache = new Map();
+const emailIdentityCache = new Map();
+
+async function getUserIdentityByUid(uid) {
+  const normalized = typeof uid === 'string' ? uid.trim() : '';
+  if (!normalized) return null;
+
+  if (userIdentityCache.has(normalized)) {
+    return userIdentityCache.get(normalized);
+  }
+
+  let email = null;
+  let displayName = null;
+
+  try {
+    const snapshot = await db.collection('users').doc(normalized).get();
+    if (snapshot.exists) {
+      const data = snapshot.data() || {};
+      if (typeof data.email === 'string') {
+        email = data.email.trim().toLowerCase();
+      }
+      if (typeof data.displayName === 'string' && data.displayName.trim()) {
+        displayName = data.displayName.trim();
+      }
+    }
+  } catch (error) {
+    if (functions.logger) {
+      functions.logger.warn('Failed to read user profile document', { uid: normalized, error: error.message });
+    }
+  }
+
+  if (!email || !displayName) {
+    try {
+      const userRecord = await admin.auth().getUser(normalized);
+      if (!email && typeof userRecord.email === 'string') {
+        email = userRecord.email.trim().toLowerCase();
+      }
+      if (!displayName) {
+        if (typeof userRecord.displayName === 'string' && userRecord.displayName.trim()) {
+          displayName = userRecord.displayName.trim();
+        } else if (typeof userRecord.email === 'string') {
+          displayName = userRecord.email.trim();
+        }
+      }
+    } catch (error) {
+      if (functions.logger) {
+        functions.logger.warn('Auth record lookup failed while resolving user identity', { uid: normalized, error: error.message });
+      }
+    }
+  }
+
+  if (!displayName) {
+    displayName = email || normalized;
+  }
+
+  const identity = {
+    uid: normalized,
+    email: email || null,
+    displayName
+  };
+
+  userIdentityCache.set(normalized, identity);
+  if (identity.email && !emailIdentityCache.has(identity.email)) {
+    emailIdentityCache.set(identity.email, identity);
+  }
+
+  return identity;
+}
+
+async function getUserIdentityByEmail(email) {
+  const normalized = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  if (!normalized) return null;
+
+  if (emailIdentityCache.has(normalized)) {
+    return emailIdentityCache.get(normalized);
+  }
+
+  try {
+    const userRecord = await admin.auth().getUserByEmail(normalized);
+    const identity = await getUserIdentityByUid(userRecord.uid);
+    if (identity) {
+      emailIdentityCache.set(normalized, identity);
+      return identity;
+    }
+
+    const fallback = {
+      uid: userRecord.uid,
+      email: normalized,
+      displayName: userRecord.displayName || normalized
+    };
+    userIdentityCache.set(userRecord.uid, fallback);
+    emailIdentityCache.set(normalized, fallback);
+    return fallback;
+  } catch (error) {
+    if (functions.logger) {
+      functions.logger.warn('Auth lookup by email failed while resolving identity', { email: normalized, error: error.message });
+    }
+  }
+
+  try {
+    const snapshot = await db.collection('users').where('email', '==', normalized).limit(1).get();
+    if (!snapshot.empty) {
+      const doc = snapshot.docs[0];
+      const data = doc.data() || {};
+      const identity = {
+        uid: doc.id,
+        email: normalized,
+        displayName: (typeof data.displayName === 'string' && data.displayName.trim()) ? data.displayName.trim() : (data.email || normalized)
+      };
+      userIdentityCache.set(identity.uid, identity);
+      emailIdentityCache.set(normalized, identity);
+      return identity;
+    }
+  } catch (error) {
+    if (functions.logger) {
+      functions.logger.warn('Firestore lookup by email failed while resolving identity', { email: normalized, error: error.message });
+    }
+  }
+
+  emailIdentityCache.set(normalized, null);
+  return null;
+}
+
+async function createInboxNotification(recipientUid, notification) {
+  const targetUid = typeof recipientUid === 'string' ? recipientUid.trim() : '';
+  if (!targetUid) return null;
+
+  const inboxRef = db.collection('inboxes').doc(targetUid);
+  const itemRef = inboxRef.collection('items').doc();
+  const unread = notification.unread !== false;
+
+  const payload = {
+    ...notification,
+    unread,
+    createdAt: FieldValue.serverTimestamp()
+  };
+
+  return db.runTransaction(async (tx) => {
+    tx.set(itemRef, payload);
+    const parentUpdate = {
+      updatedAt: FieldValue.serverTimestamp()
+    };
+    if (unread) {
+      parentUpdate.unreadCount = FieldValue.increment(1);
+    }
+    tx.set(inboxRef, parentUpdate, { merge: true });
+  });
+}
+
+function buildShiftSummary(shiftDate, siteName) {
+  const trimmedSite = typeof siteName === 'string' ? siteName.trim() : '';
+  let dateLabel = '';
+
+  if (shiftDate) {
+    const formatted = formatDateForEmail(shiftDate);
+    if (formatted && formatted !== 'this shift') {
+      dateLabel = formatted;
+    }
+  }
+
+  if (trimmedSite && dateLabel) {
+    return `${trimmedSite} on ${dateLabel}`;
+  }
+
+  if (trimmedSite) return trimmedSite;
+  if (dateLabel) return dateLabel;
+
+  return 'this shift';
+}
+
 exports.sendReviewRequestEmail = functions.firestore
   .document('shiftReports/{reportId}')
   .onWrite(async (change, context) => {
@@ -342,6 +512,7 @@ exports.sendReviewRequestEmail = functions.firestore
     const reportRef = afterSnap.ref;
     const nowTs = Timestamp.now();
     const pendingEmails = [];
+    const pendingNotifications = [];
 
     await db.runTransaction(async (tx) => {
       const snapshot = await tx.get(reportRef);
@@ -403,9 +574,15 @@ exports.sendReviewRequestEmail = functions.firestore
             controllers: [current.controller1, current.controller2].filter(Boolean)
           }
         });
+
+        pendingNotifications.push({
+          email,
+          shiftDate: current.reportDate || current.shiftDate,
+          siteName: current.siteName || current.startingDestination
+        });
       });
 
-      if (pendingEmails.length === 0) {
+      if (pendingEmails.length === 0 && pendingNotifications.length === 0) {
         return;
       }
 
@@ -416,23 +593,203 @@ exports.sendReviewRequestEmail = functions.firestore
       });
     });
 
-    if (!pendingEmails.length) {
+    if (!pendingEmails.length && !pendingNotifications.length) {
       return null;
     }
 
-    await Promise.all(
-      pendingEmails.map((entry) => {
-        const subject = `Action Required: Please Review the Shift Report for ${formatDateForEmail(entry.report.shiftDate)}`;
-        const html = buildReviewEmailHtml(entry.report, entry.name, entry.link);
-        const text = buildReviewEmailText(entry.report, entry.name, entry.link);
+    if (pendingEmails.length) {
+      await Promise.all(
+        pendingEmails.map((entry) => {
+          const subject = `Action Required: Please Review the Shift Report for ${formatDateForEmail(entry.report.shiftDate)}`;
+          const html = buildReviewEmailHtml(entry.report, entry.name, entry.link);
+          const text = buildReviewEmailText(entry.report, entry.name, entry.link);
 
-        return db.collection(MAIL_COLLECTION).add({
-          to: [entry.email],
-          message: {
-            subject,
-            html,
-            text
+          return db.collection(MAIL_COLLECTION).add({
+            to: [entry.email],
+            message: {
+              subject,
+              html,
+              text
+            }
+          });
+        })
+      );
+    }
+
+    if (pendingNotifications.length) {
+      const actorUid = afterData.submittedBy || afterData.createdBy || null;
+      const actorIdentity = actorUid ? await getUserIdentityByUid(actorUid) : null;
+      const actorName =
+        (actorIdentity && actorIdentity.displayName) ||
+        afterData.controller1 ||
+        afterData.controller2 ||
+        (actorIdentity && actorIdentity.email) ||
+        'Shift Controller';
+      const actorId = (actorIdentity && actorIdentity.uid) || actorUid || 'system';
+
+      const uniqueNotifications = new Map();
+
+      for (const entry of pendingNotifications) {
+        const recipientIdentity = await getUserIdentityByEmail(entry.email);
+        if (!recipientIdentity || uniqueNotifications.has(recipientIdentity.uid)) {
+          continue;
+        }
+
+        const shiftSummary = buildShiftSummary(entry.shiftDate, entry.siteName);
+        const title = `Review requested: ${shiftSummary}`;
+        const body = `${actorName} submitted ${shiftSummary} for review.`;
+
+        uniqueNotifications.set(recipientIdentity.uid, {
+          uid: recipientIdentity.uid,
+          payload: {
+            type: 'review_request',
+            reportId: context.params.reportId,
+            actorId,
+            actorName,
+            status: 'under_review',
+            title,
+            body,
+            unread: true,
+            reportDate: entry.shiftDate || null,
+            siteName: entry.siteName || null
           }
+        });
+      }
+
+      if (uniqueNotifications.size) {
+        await Promise.all(
+          Array.from(uniqueNotifications.values()).map((item) =>
+            createInboxNotification(item.uid, item.payload)
+          )
+        );
+      }
+    }
+
+    return null;
+  });
+
+exports.notifyReportDecision = functions.firestore
+  .document('shiftReports/{reportId}')
+  .onUpdate(async (change, context) => {
+    const beforeData = change.before.data();
+    const afterData = change.after.data();
+    const beforeStatus = normalizeStatus(beforeData.status);
+    const afterStatus = normalizeStatus(afterData.status);
+
+    if (beforeStatus === afterStatus) {
+      return null;
+    }
+
+    if (!['approved', 'rejected'].includes(afterStatus)) {
+      return null;
+    }
+
+    const reportId = context.params.reportId;
+    const shiftDate = afterData.reportDate || afterData.shiftDate;
+    const siteName = afterData.siteName || afterData.startingDestination;
+
+    let actorUid = typeof afterData.approvedBy === 'string' ? afterData.approvedBy.trim() : '';
+    let actorName = null;
+    let actorEmail = null;
+
+    const approvals = Array.isArray(afterData.approvals) ? afterData.approvals : [];
+    if (!actorUid && approvals.length) {
+      const latest = approvals[approvals.length - 1];
+      if (latest && typeof latest === 'object') {
+        if (typeof latest.approverId === 'string') {
+          actorUid = latest.approverId.trim();
+        }
+        if (typeof latest.approverName === 'string' && latest.approverName.trim()) {
+          actorName = latest.approverName.trim();
+        }
+      }
+    }
+
+    if (!actorUid) {
+      const afterReviewers = Array.isArray(afterData.reviewers) ? afterData.reviewers : [];
+      const beforeReviewers = Array.isArray(beforeData.reviewers) ? beforeData.reviewers : [];
+      for (let index = 0; index < afterReviewers.length; index += 1) {
+        const afterReviewer = afterReviewers[index];
+        if (!afterReviewer || typeof afterReviewer !== 'object') continue;
+        const afterReviewerStatus = normalizeStatus(afterReviewer.status);
+        if (afterReviewerStatus !== afterStatus) continue;
+        const priorReviewer = beforeReviewers[index] || {};
+        const priorStatus = normalizeStatus(priorReviewer.status);
+        if (priorStatus === afterStatus) continue;
+
+        if (typeof afterReviewer.email === 'string') {
+          actorEmail = afterReviewer.email.trim().toLowerCase();
+        }
+        if (!actorName && typeof afterReviewer.name === 'string' && afterReviewer.name.trim()) {
+          actorName = afterReviewer.name.trim();
+        }
+        break;
+      }
+    }
+
+    let actorIdentity = null;
+    let actorId = 'system';
+
+    if (actorUid) {
+      actorIdentity = await getUserIdentityByUid(actorUid);
+      actorId = (actorIdentity && actorIdentity.uid) || actorUid;
+      if (!actorName) {
+        actorName =
+          (actorIdentity && actorIdentity.displayName) ||
+          (actorIdentity && actorIdentity.email) ||
+          actorUid;
+      }
+    } else if (actorEmail) {
+      actorIdentity = await getUserIdentityByEmail(actorEmail);
+      if (actorIdentity) {
+        actorId = actorIdentity.uid;
+        if (!actorName) {
+          actorName = actorIdentity.displayName || actorIdentity.email || actorEmail;
+        }
+      } else {
+        actorId = actorEmail;
+        actorName = actorName || actorEmail;
+      }
+    }
+
+    if (!actorName) {
+      actorName = 'Review Team';
+    }
+
+    const recipientUids = new Set();
+    if (typeof afterData.createdBy === 'string' && afterData.createdBy.trim()) {
+      recipientUids.add(afterData.createdBy.trim());
+    }
+    if (typeof afterData.submittedBy === 'string' && afterData.submittedBy.trim()) {
+      recipientUids.add(afterData.submittedBy.trim());
+    }
+
+    if (recipientUids.size === 0) {
+      return null;
+    }
+
+    const shiftSummary = buildShiftSummary(shiftDate, siteName);
+    const verb = afterStatus === 'approved' ? 'approved' : 'rejected';
+    const title = afterStatus === 'approved' ? 'Report approved' : 'Report rejected';
+    const body = `${actorName} ${verb} your report for ${shiftSummary}.`;
+
+    await Promise.all(
+      Array.from(recipientUids).map(async (uid) => {
+        const identity = await getUserIdentityByUid(uid);
+        if (!identity) {
+          return null;
+        }
+        return createInboxNotification(uid, {
+          type: 'review_decision',
+          reportId,
+          actorId,
+          actorName,
+          status: afterStatus,
+          title,
+          body,
+          unread: true,
+          reportDate: shiftDate || null,
+          siteName: siteName || null
         });
       })
     );

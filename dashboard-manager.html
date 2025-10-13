@@ -388,7 +388,7 @@
         row.className = index % 2 === 0 ? 'hover:bg-neutral-50' : 'bg-neutral-50 hover:bg-neutral-50';
         
         // Format date
-        const reportDate = this.formatDate(report.shiftDate || report.createdAt);
+        const reportDate = this.formatDate(this.getTimelineDate(report));
         
         // Get controller name(s) - Fixed to show controller1 and controller2
         const controllerName = this.getControllerName(report);
@@ -436,6 +436,15 @@
           console.error('Date formatting error:', error);
           return 'N/A';
         }
+      }
+
+      getTimelineDate(report) {
+        if (!report) return null;
+        return report.shiftDate ||
+          report.updatedAtClientIso ||
+          report.createdAtClientIso ||
+          (report.updatedAt && typeof report.updatedAt.toDate === 'function' ? report.updatedAt.toDate() : report.updatedAt) ||
+          (report.createdAt && typeof report.createdAt.toDate === 'function' ? report.createdAt.toDate() : report.createdAt);
       }
 
       getControllerName(report) {
@@ -683,7 +692,7 @@
           const { db } = await import('./firebase-config.js');
           
           const reportsRef = collection(db, 'shiftReports');
-          const q = query(reportsRef, orderBy('createdAt', 'desc'));
+          const q = query(reportsRef, orderBy('updatedAtServer', 'desc'));
           
           this.unsubscribeRealtimeUpdates = onSnapshot(q, (snapshot) => {
             console.log('Real-time update received for manager dashboard');
@@ -762,7 +771,7 @@
 
           // Filter reports
           const filteredReports = this.reports.filter(report => {
-            const reportDate = this.formatDate(report.shiftDate || report.createdAt).toLowerCase();
+            const reportDate = this.formatDate(this.getTimelineDate(report)).toLowerCase();
             const controllerName = this.getControllerName(report).toLowerCase();
             const status = (report.status || '').toLowerCase();
 

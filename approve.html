@@ -351,7 +351,14 @@
     }
 
     function renderReport(report) {
-      if (elements.summaryDate) elements.summaryDate.textContent = formatDate(report.reportDate || report.shiftDate || report.createdAt);
+      const timelineDate =
+        report.reportDate ||
+        report.shiftDate ||
+        report.updatedAtClientIso ||
+        report.createdAtClientIso ||
+        (report.updatedAt && typeof report.updatedAt.toDate === 'function' ? report.updatedAt.toDate() : report.updatedAt) ||
+        (report.createdAt && typeof report.createdAt.toDate === 'function' ? report.createdAt.toDate() : report.createdAt);
+      if (elements.summaryDate) elements.summaryDate.textContent = formatDate(timelineDate);
       if (elements.summaryShift) elements.summaryShift.textContent = report.shiftType || '—';
       if (elements.summarySite) elements.summarySite.textContent = report.siteName || report.startingDestination || '—';
       if (elements.summaryControllers) elements.summaryControllers.textContent = formatControllers(report);

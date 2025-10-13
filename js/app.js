@@ -292,7 +292,8 @@ class App {
     card.className = 'p-4 border border-gray-200 rounded-xl bg-white hover:shadow-md transition-shadow';
     
     const statusBadge = this.getStatusBadge(report.status);
-    const date = new Date(report.createdAt?.toDate?.() || report.createdAt).toLocaleDateString();
+    const timelineDate = this.getTimelineDate(report);
+    const date = timelineDate ? new Date(timelineDate).toLocaleDateString() : 'N/A';
     
     card.innerHTML = `
       <div class="flex items-center justify-between mb-2">
@@ -316,6 +317,26 @@ class App {
     this.addReportCardListeners(card, report);
     
     return card;
+  }
+
+  getTimelineDate(report) {
+    if (!report) return null;
+    if (report.shiftDate) return report.shiftDate;
+    if (report.updatedAtClientIso) return report.updatedAtClientIso;
+    if (report.createdAtClientIso) return report.createdAtClientIso;
+    if (report.updatedAt) {
+      if (typeof report.updatedAt.toDate === 'function') {
+        return report.updatedAt.toDate();
+      }
+      return report.updatedAt;
+    }
+    if (report.createdAt) {
+      if (typeof report.createdAt.toDate === 'function') {
+        return report.createdAt.toDate();
+      }
+      return report.createdAt;
+    }
+    return null;
   }
 
   // Get action buttons based on user type and report status

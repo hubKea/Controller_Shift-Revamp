@@ -1006,34 +1006,21 @@
 
 
 
-        const timestamp = nowIso();
+        const clientTimestampIso = nowIso();
 
         const additionalFields = {
-
-          updatedAt: timestamp
-
+          updatedAtClientIso: clientTimestampIso
         };
 
-
-
         if (isReview) {
-
-          additionalFields.submittedAt = timestamp;
-
-          additionalFields.submittedBy = currentUser.uid;
-
-          additionalFields.reviewRequestedAt = timestamp;
-
+          additionalFields.submittedAtClientIso = clientTimestampIso;
+          additionalFields.reviewRequestedAtClientIso = clientTimestampIso;
         }
 
-
-
         const result = await enhancedReportService.createReport(data, {
-
           status,
-
-          additionalFields
-
+          additionalFields,
+          clientTimestampIso
         });
 
 

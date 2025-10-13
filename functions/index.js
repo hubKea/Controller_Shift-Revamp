@@ -462,8 +462,12 @@ async function createInboxNotification(recipientUid, notification) {
 
   return db.runTransaction(async (tx) => {
     tx.set(itemRef, payload);
+    const parentUpdateTimestamp = FieldValue.serverTimestamp();
+    const parentUpdateIso = Timestamp.now().toDate().toISOString();
     const parentUpdate = {
-      updatedAt: FieldValue.serverTimestamp()
+      updatedAt: parentUpdateTimestamp,
+      updatedAtServer: parentUpdateTimestamp,
+      updatedAtClientIso: parentUpdateIso
     };
     if (unread) {
       parentUpdate.unreadCount = FieldValue.increment(1);
@@ -493,6 +497,66 @@ function buildShiftSummary(shiftDate, siteName) {
   return 'this shift';
 }
 
+async function resolveReviewers(after) {
+  if (!after) return [];
+
+  const reviewers = Array.isArray(after.reviewers) ? after.reviewers : [];
+  const explicit = reviewers
+    .map((reviewer) => {
+      if (!reviewer || typeof reviewer !== 'object') return null;
+      const uid = typeof reviewer.uid === 'string' ? reviewer.uid.trim() : '';
+      return uid || null;
+    })
+    .filter(Boolean);
+
+  if (explicit.length) {
+    return Array.from(new Set(explicit));
+  }
+
+  const submitter =
+    (typeof after.submittedBy === 'string' && after.submittedBy.trim()) ||
+    (after.controller1 && typeof after.controller1 === 'object' && typeof after.controller1.uid === 'string'
+      ? after.controller1.uid.trim()
+      : null);
+
+  const snapshot = await db.collection('users').where('permissions.canApprove', '==', true).get();
+  const fallback = snapshot.docs
+    .map((doc) => doc.id)
+    .filter((id) => typeof id === 'string' && id && (!submitter || id !== submitter));
+
+  return Array.from(new Set(fallback));
+}
+
+async function publishNotification(uid, payload) {
+  const normalized = typeof uid === 'string' ? uid.trim() : '';
+  if (!normalized) return null;
+  return createInboxNotification(normalized, payload);
+}
+
+function collectControllerUids(after) {
+  if (!after) return [];
+
+  const candidates = [];
+  if (after.controller1) candidates.push(after.controller1);
+  if (after.controller2) candidates.push(after.controller2);
+  if (typeof after.controller1Uid === 'string') candidates.push({ uid: after.controller1Uid });
+  if (typeof after.controller2Uid === 'string') candidates.push({ uid: after.controller2Uid });
+
+  const uids = new Set();
+  candidates.forEach((candidate) => {
+    if (!candidate || typeof candidate !== 'object') return;
+    const uid =
+      (typeof candidate.uid === 'string' && candidate.uid.trim()) ||
+      (typeof candidate.id === 'string' && candidate.id.trim()) ||
+      null;
+    if (uid) {
+      uids.add(uid);
+    }
+  });
+
+  return Array.from(uids);
+}
+
 exports.sendReviewRequestEmail = functions.firestore
   .document('shiftReports/{reportId}')
   .onWrite(async (change, context) => {
@@ -512,7 +576,6 @@ exports.sendReviewRequestEmail = functions.firestore
     const reportRef = afterSnap.ref;
     const nowTs = Timestamp.now();
     const pendingEmails = [];
-    const pendingNotifications = [];
 
     await db.runTransaction(async (tx) => {
       const snapshot = await tx.get(reportRef);
@@ -574,101 +637,121 @@ exports.sendReviewRequestEmail = functions.firestore
             controllers: [current.controller1, current.controller2].filter(Boolean)
           }
         });
-
-        pendingNotifications.push({
-          email,
-          shiftDate: current.reportDate || current.shiftDate,
-          siteName: current.siteName || current.startingDestination
-        });
       });
 
-      if (pendingEmails.length === 0 && pendingNotifications.length === 0) {
+      if (pendingEmails.length === 0) {
         return;
       }
 
+      const updateSentinel = FieldValue.serverTimestamp();
+      const updateIso = nowTs.toDate().toISOString();
       tx.update(reportRef, {
         reviewers: updatedReviewers,
         reviewRequestedAt: nowTs,
-        updatedAt: FieldValue.serverTimestamp()
+        updatedAt: updateSentinel,
+        updatedAtServer: updateSentinel,
+        updatedAtClientIso: updateIso
       });
     });
 
-    if (!pendingEmails.length && !pendingNotifications.length) {
+    if (!pendingEmails.length) {
       return null;
     }
 
-    if (pendingEmails.length) {
-      await Promise.all(
-        pendingEmails.map((entry) => {
-          const subject = `Action Required: Please Review the Shift Report for ${formatDateForEmail(entry.report.shiftDate)}`;
-          const html = buildReviewEmailHtml(entry.report, entry.name, entry.link);
-          const text = buildReviewEmailText(entry.report, entry.name, entry.link);
+    await Promise.all(
+      pendingEmails.map((entry) => {
+        const subject = `Action Required: Please Review the Shift Report for ${formatDateForEmail(entry.report.shiftDate)}`;
+        const html = buildReviewEmailHtml(entry.report, entry.name, entry.link);
+        const text = buildReviewEmailText(entry.report, entry.name, entry.link);
 
-          return db.collection(MAIL_COLLECTION).add({
-            to: [entry.email],
-            message: {
-              subject,
-              html,
-              text
-            }
-          });
-        })
-      );
-    }
-
-    if (pendingNotifications.length) {
-      const actorUid = afterData.submittedBy || afterData.createdBy || null;
-      const actorIdentity = actorUid ? await getUserIdentityByUid(actorUid) : null;
-      const actorName =
-        (actorIdentity && actorIdentity.displayName) ||
-        afterData.controller1 ||
-        afterData.controller2 ||
-        (actorIdentity && actorIdentity.email) ||
-        'Shift Controller';
-      const actorId = (actorIdentity && actorIdentity.uid) || actorUid || 'system';
-
-      const uniqueNotifications = new Map();
-
-      for (const entry of pendingNotifications) {
-        const recipientIdentity = await getUserIdentityByEmail(entry.email);
-        if (!recipientIdentity || uniqueNotifications.has(recipientIdentity.uid)) {
-          continue;
-        }
-
-        const shiftSummary = buildShiftSummary(entry.shiftDate, entry.siteName);
-        const title = `Review requested: ${shiftSummary}`;
-        const body = `${actorName} submitted ${shiftSummary} for review.`;
-
-        uniqueNotifications.set(recipientIdentity.uid, {
-          uid: recipientIdentity.uid,
-          payload: {
-            type: 'review_request',
-            reportId: context.params.reportId,
-            actorId,
-            actorName,
-            status: 'under_review',
-            title,
-            body,
-            unread: true,
-            reportDate: entry.shiftDate || null,
-            siteName: entry.siteName || null
+        return db.collection(MAIL_COLLECTION).add({
+          to: [entry.email],
+          message: {
+            subject,
+            html,
+            text
           }
         });
-      }
-
-      if (uniqueNotifications.size) {
-        await Promise.all(
-          Array.from(uniqueNotifications.values()).map((item) =>
-            createInboxNotification(item.uid, item.payload)
-          )
-        );
-      }
-    }
+      })
+    );
 
     return null;
   });
 
-exports.notifyReportDecision = functions.firestore
+exports.onReportUnderReview = functions.firestore
+  .document('shiftReports/{reportId}')
+  .onUpdate(async (change, context) => {
+    if (!change.before.exists || !change.after.exists) {
+      return null;
+    }
+
+    const before = change.before.data();
+    const after = change.after.data();
+    const beforeStatus = normalizeStatus(before.status);
+    const afterStatus = normalizeStatus(after.status);
+
+    if (beforeStatus === 'under_review' || afterStatus !== 'under_review') {
+      return null;
+    }
+
+    const targets = await resolveReviewers(after);
+    if (!targets.length) {
+      return null;
+    }
+
+    let actorId =
+      (typeof after.submittedBy === 'string' && after.submittedBy.trim()) ||
+      (after.controller1 && typeof after.controller1 === 'object' && typeof after.controller1.uid === 'string'
+        ? after.controller1.uid.trim()
+        : '');
+    actorId = actorId || 'system';
+
+    let actorName = 'Controller';
+    if (after.controller1 && typeof after.controller1 === 'object') {
+      if (typeof after.controller1.name === 'string' && after.controller1.name.trim()) {
+        actorName = after.controller1.name.trim();
+      } else if (typeof after.controller1.displayName === 'string' && after.controller1.displayName.trim()) {
+        actorName = after.controller1.displayName.trim();
+      }
+    } else if (typeof after.controller1 === 'string' && after.controller1.trim()) {
+      actorName = after.controller1.trim();
+    }
+
+    if (actorId !== 'system') {
+      const actorIdentity = await getUserIdentityByUid(actorId);
+      if (actorIdentity) {
+        actorId = actorIdentity.uid;
+        actorName = actorIdentity.displayName || actorIdentity.email || actorName;
+      }
+    }
+
+    const payload = {
+      type: 'review_request',
+      reportId: context.params.reportId,
+      actorId,
+      actorName,
+      status: 'under_review',
+      title: 'Review requested',
+      body: 'A shift report requires your approval.',
+      unread: true,
+      reportDate: after.reportDate || after.shiftDate || null,
+      siteName: after.siteName || after.startingDestination || null
+    };
+
+    await Promise.all(
+      targets.map(async (uid) => {
+        const identity = await getUserIdentityByUid(uid);
+        if (!identity) {
+          return null;
+        }
+        return publishNotification(identity.uid, payload);
+      })
+    );
+
+    return null;
+  });
+
+exports.onReportDecision = functions.firestore
   .document('shiftReports/{reportId}')
   .onUpdate(async (change, context) => {
     const beforeData = change.before.data();
@@ -756,16 +839,17 @@ exports.notifyReportDecision = functions.firestore
       actorName = 'Review Team';
     }
 
-    const recipientUids = new Set();
-    if (typeof afterData.createdBy === 'string' && afterData.createdBy.trim()) {
-      recipientUids.add(afterData.createdBy.trim());
-    }
-    if (typeof afterData.submittedBy === 'string' && afterData.submittedBy.trim()) {
-      recipientUids.add(afterData.submittedBy.trim());
-    }
+    const controllerRecipients = collectControllerUids(afterData);
+    const recipientUids = new Set(controllerRecipients);
 
     if (recipientUids.size === 0) {
-      return null;
+      if (typeof afterData.submittedBy === 'string' && afterData.submittedBy.trim()) {
+        recipientUids.add(afterData.submittedBy.trim());
+      } else if (typeof afterData.createdBy === 'string' && afterData.createdBy.trim()) {
+        recipientUids.add(afterData.createdBy.trim());
+      } else {
+        return null;
+      }
     }
 
     const shiftSummary = buildShiftSummary(shiftDate, siteName);
@@ -779,7 +863,7 @@ exports.notifyReportDecision = functions.firestore
         if (!identity) {
           return null;
         }
-        return createInboxNotification(uid, {
+        return publishNotification(identity.uid, {
           type: 'review_decision',
           reportId,
           actorId,
@@ -841,16 +925,23 @@ exports.reviewerApproveReport = functions.https.onCall(async (data) => {
 
     reviewers[match.index] = reviewerUpdate;
 
+    const updateSentinel = FieldValue.serverTimestamp();
+    const updateIso = Timestamp.now().toDate().toISOString();
     const updates = {
       reviewers,
-      updatedAt: FieldValue.serverTimestamp()
+      updatedAt: updateSentinel,
+      updatedAtServer: updateSentinel,
+      updatedAtClientIso: updateIso
     };
 
     Object.assign(updates, removeTokenFromAuxStructures(report, token));
 
     if (areAllReviewersApproved(reviewers)) {
+      const approvalSentinel = FieldValue.serverTimestamp();
       updates.status = 'approved';
-      updates.approvedAt = FieldValue.serverTimestamp();
+      updates.approvedAt = approvalSentinel;
+      updates.approvedAtServer = approvalSentinel;
+      updates.approvedAtClientIso = updateIso;
     } else if (currentStatus === 'submitted') {
       updates.status = 'under_review';
     }
@@ -923,12 +1014,19 @@ exports.reviewerRejectReport = functions.https.onCall(async (data) => {
       return clone;
     });
 
+    const updateIso = Timestamp.now().toDate().toISOString();
+    const rejectionSentinel = FieldValue.serverTimestamp();
+    const updateSentinel = FieldValue.serverTimestamp();
     const updates = {
       reviewers: updatedReviewers,
       status: 'rejected',
       rejectionReason: comment,
-      rejectedAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp()
+      rejectedAt: rejectionSentinel,
+      rejectedAtServer: rejectionSentinel,
+      rejectedAtClientIso: updateIso,
+      updatedAt: updateSentinel,
+      updatedAtServer: updateSentinel,
+      updatedAtClientIso: updateIso
     };
 
     Object.assign(updates, clearAllTokens(report));

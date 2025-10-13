@@ -416,8 +416,8 @@
 
         if (changed || snapshot.docChanges().length === 0) {
           this.reports = Array.from(this.reportDocs.values()).sort((a, b) => {
-            const dateA = this.getComparableDate(a.createdAt || a.shiftDate);
-            const dateB = this.getComparableDate(b.createdAt || b.shiftDate);
+            const dateA = this.getComparableDate(this.getTimelineDate(a));
+            const dateB = this.getComparableDate(this.getTimelineDate(b));
             return dateB - dateA;
           });
 
@@ -508,7 +508,7 @@
         row.className = index % 2 === 0 ? 'hover:bg-neutral-50' : 'bg-neutral-50 hover:bg-neutral-50';
         
         // Format date
-        const reportDate = this.formatDate(report.shiftDate || report.createdAt);
+        const reportDate = this.formatDate(this.getTimelineDate(report));
         
         // Get controller names (both controller1 and controller2)
         const controllerNames = this.getControllerNames(report);
@@ -574,6 +574,15 @@
 
         const parsed = new Date(value);
         return isNaN(parsed.getTime()) ? new Date(0) : parsed;
+      }
+
+      getTimelineDate(report) {
+        if (!report) return null;
+        return report.shiftDate ||
+          report.updatedAtClientIso ||
+          report.createdAtClientIso ||
+          (report.updatedAt && typeof report.updatedAt.toDate === 'function' ? report.updatedAt.toDate() : report.updatedAt) ||
+          (report.createdAt && typeof report.createdAt.toDate === 'function' ? report.createdAt.toDate() : report.createdAt);
       }
 
       formatDate(dateInput) {
@@ -740,7 +749,7 @@
 
           // Filter reports
           const filteredReports = this.reports.filter(report => {
-            const reportDate = this.formatDate(report.shiftDate || report.createdAt).toLowerCase();
+            const reportDate = this.formatDate(this.getTimelineDate(report)).toLowerCase();
             const controllerName = this.getControllerNames(report).toLowerCase();
             const status = (report.status || '');
 

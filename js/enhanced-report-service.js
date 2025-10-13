@@ -20,6 +20,45 @@ import { userService } from './user-service.js';
 import { DataModel, DataValidator, DataTransformer } from './data-model.js';
 import { nowIso } from './utils.js';
 
+function buildTimestampFields({ includeCreated = false, clientTimestampIso } = {}) {
+  const iso = clientTimestampIso || nowIso();
+  const updatedServerValue = serverTimestamp();
+  const payload = {
+    updatedAtServer: updatedServerValue,
+    updatedAtClientIso: iso,
+    updatedAt: updatedServerValue
+  };
+
+  if (includeCreated) {
+    const createdServerValue = serverTimestamp();
+    payload.createdAtServer = createdServerValue;
+    payload.createdAtClientIso = iso;
+    payload.createdAt = createdServerValue;
+  }
+
+  return payload;
+}
+
+function deriveCreatedAtFields(existing = {}) {
+  const derived = {};
+  if (existing.createdAt !== undefined) {
+    derived.createdAt = existing.createdAt;
+  }
+  if (existing.createdAtServer !== undefined) {
+    derived.createdAtServer = existing.createdAtServer;
+  } else if (existing.createdAt) {
+    derived.createdAtServer = existing.createdAt;
+  }
+
+  if (existing.createdAtClientIso) {
+    derived.createdAtClientIso = existing.createdAtClientIso;
+  } else if (existing.createdAt && typeof existing.createdAt.toDate === 'function') {
+    derived.createdAtClientIso = existing.createdAt.toDate().toISOString();
+  }
+
+  return derived;
+}
+
 class EnhancedReportService {
   constructor() {
     this.reportsCollection = DataModel.shiftReports.collection;
@@ -41,29 +80,32 @@ class EnhancedReportService {
 
       const status = options.status || 'draft';
       const additionalFields = options.additionalFields ?? {};
+      const clientTimestampIso = options.clientTimestampIso || nowIso();
 
       const reportData = DataTransformer.formToReport(formData, currentUser.user.uid, { status });
-      Object.assign(reportData, additionalFields);
-
       reportData.status = status;
       reportData.createdBy = currentUser.user.uid;
+      reportData.version = options.version ?? 1;
+
+      Object.assign(reportData, additionalFields);
 
       DataValidator.validateShiftReport(reportData);
 
-      reportData.createdAt = serverTimestamp();
-      reportData.updatedAt = serverTimestamp();
-      reportData.version = options.version ?? 1;
+      Object.assign(
+        reportData,
+        buildTimestampFields({ includeCreated: true, clientTimestampIso })
+      );
 
       if (status === 'under_review') {
         reportData.submittedAt = serverTimestamp();
         reportData.submittedBy = currentUser.user.uid;
+        reportData.submittedAtClientIso = clientTimestampIso;
       }
 
       const docRef = await addDoc(collection(db, this.reportsCollection), reportData);
 
-      const savedAt = nowIso();
-      console.log('Report created successfully:', docRef.id, 'at', savedAt);
-      return { success: true, reportId: docRef.id, savedAt, data: { id: docRef.id, ...reportData } };
+      console.log('Report created successfully:', docRef.id, 'at', clientTimestampIso);
+      return { success: true, reportId: docRef.id, savedAt: clientTimestampIso, data: { id: docRef.id, ...reportData } };
     } catch (error) {
       console.error('Create report error:', error);
       return { success: false, error: error.message };
@@ -71,7 +113,7 @@ class EnhancedReportService {
   }
 
   // Update an existing report with validation
-  async updateReport(reportId, formData) {
+  async updateReport(reportId, formData, options = {}) {
     try {
       const currentUser = userService.getCurrentUser();
       if (!currentUser.isAuthenticated) {
@@ -90,22 +132,22 @@ class EnhancedReportService {
       }
 
       // Transform form data to report structure
+      const clientTimestampIso = options.clientTimestampIso || nowIso();
       const updateData = DataTransformer.formToReport(formData, currentUser.user.uid);
       
       // Preserve critical fields that shouldn't be changed by client
       updateData.id = reportId;
       updateData.status = report.data.status;
       updateData.createdBy = report.data.createdBy;
-      updateData.createdAt = report.data.createdAt;
       updateData.version = (report.data.version || 1) + 1;
-      updateData.updatedAt = serverTimestamp();
+      Object.assign(updateData, deriveCreatedAtFields(report.data));
+      Object.assign(updateData, buildTimestampFields({ clientTimestampIso }));
 
       // Update the report
       await updateDoc(doc(db, this.reportsCollection, reportId), updateData);
       
-      const savedAt = nowIso();
-      console.log('Report updated successfully:', reportId, 'at', savedAt);
-      return { success: true, data: updateData, savedAt };
+      console.log('Report updated successfully:', reportId, 'at', clientTimestampIso);
+      return { success: true, data: updateData, savedAt: clientTimestampIso };
     } catch (error) {
       console.error('Update report error:', error);
       return { success: false, error: error.message };
@@ -135,18 +177,21 @@ class EnhancedReportService {
       }
 
       // Update report status
+      const clientTimestampIso = nowIso();
       const updateData = {
         status: 'submitted',
         submittedAt: serverTimestamp(),
         submittedBy: currentUser.user.uid,
-        updatedAt: serverTimestamp(),
         version: (report.data.version || 1) + 1
       };
+      updateData.submittedAtClientIso = clientTimestampIso;
+      Object.assign(updateData, buildTimestampFields({ clientTimestampIso }));
+      Object.assign(updateData, deriveCreatedAtFields(report.data));
 
       await updateDoc(doc(db, this.reportsCollection, reportId), updateData);
       
-      console.log('Report submitted successfully:', reportId);
-      return { success: true };
+      console.log('Report submitted successfully:', reportId, 'at', clientTimestampIso);
+      return { success: true, savedAt: clientTimestampIso };
     } catch (error) {
       console.error('Submit report error:', error);
       return { success: false, error: error.message };
@@ -187,7 +232,7 @@ class EnhancedReportService {
       let q = query(
         collection(db, this.reportsCollection),
         where('createdBy', '==', currentUser.user.uid),
-        orderBy('createdAt', 'desc')
+        orderBy('updatedAtServer', 'desc')
       );
 
       // Apply filters
@@ -226,7 +271,7 @@ class EnhancedReportService {
 
       let q = query(
         collection(db, this.reportsCollection),
-        orderBy('createdAt', 'desc')
+        orderBy('updatedAtServer', 'desc')
       );
 
       // Apply filters
@@ -324,22 +369,25 @@ class EnhancedReportService {
       const updatedApprovals = [...(report.data.approvals || []), approval];
       
       // Update report status
+      const clientTimestampIso = nowIso();
       const updateData = {
         status: 'approved',
         approvals: updatedApprovals,
         approvedAt: serverTimestamp(),
         approvedBy: currentUser.user.uid,
-        updatedAt: serverTimestamp(),
         version: (report.data.version || 1) + 1
       };
+      updateData.approvedAtClientIso = clientTimestampIso;
+      Object.assign(updateData, deriveCreatedAtFields(report.data));
+      Object.assign(updateData, buildTimestampFields({ clientTimestampIso }));
 
       await updateDoc(doc(db, this.reportsCollection, reportId), updateData);
 
       // Create separate approval document (optional)
       await this.createApprovalDocument(reportId, approval, report.data);
 
-      console.log('Report approved successfully:', reportId);
-      return { success: true };
+      console.log('Report approved successfully:', reportId, 'at', clientTimestampIso);
+      return { success: true, savedAt: clientTimestampIso };
     } catch (error) {
       console.error('Approve report error:', error);
       return { success: false, error: error.message };
@@ -384,21 +432,25 @@ class EnhancedReportService {
       const updatedApprovals = [...(report.data.approvals || []), approval];
       
       // Update report status
+      const clientTimestampIso = nowIso();
       const updateData = {
         status: 'rejected',
         approvals: updatedApprovals,
         rejectionReason: comment,
-        updatedAt: serverTimestamp(),
         version: (report.data.version || 1) + 1
       };
+      updateData.rejectedAt = serverTimestamp();
+      updateData.rejectedAtClientIso = clientTimestampIso;
+      Object.assign(updateData, deriveCreatedAtFields(report.data));
+      Object.assign(updateData, buildTimestampFields({ clientTimestampIso }));
 
       await updateDoc(doc(db, this.reportsCollection, reportId), updateData);
 
       // Create separate approval document (optional)
       await this.createApprovalDocument(reportId, approval, report.data);
 
-      console.log('Report rejected successfully:', reportId);
-      return { success: true };
+      console.log('Report rejected successfully:', reportId, 'at', clientTimestampIso);
+      return { success: true, savedAt: clientTimestampIso };
     } catch (error) {
       console.error('Reject report error:', error);
       return { success: false, error: error.message };
@@ -468,7 +520,7 @@ class EnhancedReportService {
     let q = query(
       collection(db, this.reportsCollection),
       where('createdBy', '==', currentUser.user.uid),
-      orderBy('createdAt', 'desc')
+      orderBy('updatedAtServer', 'desc')
     );
 
     if (filters.status) {

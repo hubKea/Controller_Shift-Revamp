@@ -1,4 +1,4 @@
-﻿// Firestore Data Model and Schema Definitions
+// Firestore Data Model and Schema Definitions
 // This file defines the complete data structure for the Thinkers Afrika Shift Report system
 
 export const DataModel = {
@@ -35,8 +35,13 @@ export const DataModel = {
       // Metadata
       createdBy: 'string',             // UID of report creator
       createdAt: 'timestamp',          // Creation timestamp
+      createdAtServer: 'timestamp',    // Server-side creation timestamp
+      createdAtClientIso: 'string',    // Client ISO string when created
       updatedAt: 'timestamp',          // Last update timestamp
+      updatedAtServer: 'timestamp',    // Server-side last update
+      updatedAtClientIso: 'string',    // Client ISO string for last update
       submittedAt: 'timestamp',        // Submission timestamp (if submitted)
+      submittedAtClientIso: 'string',  // Client ISO when submitted
       submittedBy: 'string',           // UID of submitter
       
       // Report Content (from form)
@@ -66,9 +71,12 @@ export const DataModel = {
       reviewers: 'array',              // Array of reviewer objects
       approvals: 'array',              // Array of approval objects
       rejectionReason: 'string',       // Reason for rejection (if rejected)
+      rejectedAt: 'timestamp',         // Rejection timestamp
+      rejectedAtClientIso: 'string',   // Client ISO when rejected
       
       // Final Processing
       approvedAt: 'timestamp',         // Approval timestamp
+      approvedAtClientIso: 'string',   // Client ISO when approved
       approvedBy: 'string',            // UID of approver
       pdfGenerated: 'boolean',         // Whether PDF has been generated
       pdfUrl: 'string',                // URL to generated PDF

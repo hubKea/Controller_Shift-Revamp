@@ -333,12 +333,16 @@
   <script type="module" src="js/app.js"></script>
 
   <script type="module">
+    // Firebase and utilities imports
     import { auth, db } from './firebase-config.js';
     import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
     import { collection, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
     import { userService } from './js/user-service.js';
     import { enhancedReportService } from './js/enhanced-report-service.js';
-    import { nowIso } from './js/utils.js';
+    import { nowIso } from './js/utils.js'; // Timestamp utility for client-side ISO strings
+    
+    // Verify nowIso is loaded
+    console.log('✅ nowIso function loaded:', typeof nowIso === 'function');
 
     const localeCollator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
 

@@ -18,6 +18,7 @@ import {
 import { db } from '../firebase-config.js';
 import { userService } from './user-service.js';
 import { DataModel, DataValidator, DataTransformer } from './data-model.js';
+import { nowIso } from './utils.js';
 
 class EnhancedReportService {
   constructor() {
@@ -60,8 +61,9 @@ class EnhancedReportService {
 
       const docRef = await addDoc(collection(db, this.reportsCollection), reportData);
 
-      console.log('Report created successfully:', docRef.id);
-      return { success: true, reportId: docRef.id, data: { id: docRef.id, ...reportData } };
+      const savedAt = nowIso();
+      console.log('Report created successfully:', docRef.id, 'at', savedAt);
+      return { success: true, reportId: docRef.id, savedAt, data: { id: docRef.id, ...reportData } };
     } catch (error) {
       console.error('Create report error:', error);
       return { success: false, error: error.message };
@@ -101,8 +103,9 @@ class EnhancedReportService {
       // Update the report
       await updateDoc(doc(db, this.reportsCollection, reportId), updateData);
       
-      console.log('Report updated successfully:', reportId);
-      return { success: true, data: updateData };
+      const savedAt = nowIso();
+      console.log('Report updated successfully:', reportId, 'at', savedAt);
+      return { success: true, data: updateData, savedAt };
     } catch (error) {
       console.error('Update report error:', error);
       return { success: false, error: error.message };

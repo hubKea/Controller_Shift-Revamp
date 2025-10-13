@@ -338,6 +338,7 @@
     import { collection, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
     import { userService } from './js/user-service.js';
     import { enhancedReportService } from './js/enhanced-report-service.js';
+    import { nowIso } from './js/utils.js';
 
     const localeCollator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
 
@@ -1005,10 +1006,7 @@
 
 
 
-        const now = new Date();
-
-        const timestamp = now.toISOString();
-        const nowIso = timestamp;
+        const timestamp = nowIso();
 
         const additionalFields = {
 

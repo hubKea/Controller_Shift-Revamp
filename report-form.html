@@ -112,8 +112,24 @@
               <div class="col-span-2">
                 <label class="block text-sm font-semibold text-gray-700 mb-2">On-duty Controllers</label>
                 <div class="grid md:grid-cols-2 gap-4">
-                  <select id="controller1" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required></select>
-                  <select id="controller2" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required></select>
+                  <select id="controller1" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required>
+                    <option value="">Select Controller</option>
+                    <option value="keamogetswe@thinkersafrika.co.za">Keamogetswe Maripane</option>
+                    <option value="sipho@thinkersafrika.co.za">Sipho Mahlinza</option>
+                    <option value="kabelo@thinkersafrika.co.za">Kabelo Tshabalala</option>
+                    <option value="gontle@thinkersafrika.co.za">Gontle Ditibane</option>
+                    <option value="matshidiso@thinkersafrika.co.za">Matshidiso Maake</option>
+                    <option value="john@thinkersafrika.co.za">John Macharaga</option>
+                  </select>
+                  <select id="controller2" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required>
+                    <option value="">Select Controller</option>
+                    <option value="keamogetswe@thinkersafrika.co.za">Keamogetswe Maripane</option>
+                    <option value="sipho@thinkersafrika.co.za">Sipho Mahlinza</option>
+                    <option value="kabelo@thinkersafrika.co.za">Kabelo Tshabalala</option>
+                    <option value="gontle@thinkersafrika.co.za">Gontle Ditibane</option>
+                    <option value="matshidiso@thinkersafrika.co.za">Matshidiso Maake</option>
+                    <option value="john@thinkersafrika.co.za">John Macharaga</option>
+                  </select>
                 </div>
               </div>
             </section>
@@ -233,8 +249,26 @@
                 <div>
                   <label class="block text-lg font-bold text-gray-900 mb-4">Report Reviewers</label>
                   <div class="grid md:grid-cols-2 gap-4">
-                    <select id="reviewer1" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required></select>
-                    <select id="reviewer2" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"></select>
+                    <select id="reviewer1" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required>
+                      <option value="">Select Primary Reviewer</option>
+                      <option value="keamogetswe@thinkersafrika.co.za">Keamogetswe Maripane</option>
+                      <option value="sipho@thinkersafrika.co.za">Sipho Mahlinza</option>
+                      <option value="kabelo@thinkersafrika.co.za">Kabelo Tshabalala</option>
+                      <option value="gontle@thinkersafrika.co.za">Gontle Ditibane</option>
+                      <option value="matshidiso@thinkersafrika.co.za">Matshidiso Maake</option>
+                      <option value="john@thinkersafrika.co.za">John Macharaga</option>
+                      <option value="vincent@thinkersafrika.co.za">Vincent Mogashoa (Manager)</option>
+                    </select>
+                    <select id="reviewer2" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                      <option value="">Select Secondary Reviewer (Optional)</option>
+                      <option value="keamogetswe@thinkersafrika.co.za">Keamogetswe Maripane</option>
+                      <option value="sipho@thinkersafrika.co.za">Sipho Mahlinza</option>
+                      <option value="kabelo@thinkersafrika.co.za">Kabelo Tshabalala</option>
+                      <option value="gontle@thinkersafrika.co.za">Gontle Ditibane</option>
+                      <option value="matshidiso@thinkersafrika.co.za">Matshidiso Maake</option>
+                      <option value="john@thinkersafrika.co.za">John Macharaga</option>
+                      <option value="vincent@thinkersafrika.co.za">Vincent Mogashoa (Manager)</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -337,62 +371,9 @@
     import { userService } from './js/user-service.js';
     import { enhancedReportService } from './js/enhanced-report-service.js';
     import { nowIso } from './js/utils.js'; // Timestamp utility for client-side ISO strings
-    import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js';
     
     // Verify nowIso is loaded
     console.log('✅ nowIso function loaded:', typeof nowIso === 'function');
-
-    const localeCollator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
-    const functionsInstance = getFunctions();
-    const listForAssignCallable = httpsCallable(functionsInstance, 'users-listForAssign');
-    const assignableCache = new Map();
-
-    async function fetchAssignableUsers(roles = ['controller', 'manager']) {
-      const normalizedRoles = Array.isArray(roles)
-        ? Array.from(
-            new Set(
-              roles
-                .map((role) => (typeof role === 'string' ? role.trim() : ''))
-                .filter(Boolean)
-            )
-          )
-        : [];
-      const cacheKey = normalizedRoles.length ? normalizedRoles.slice().sort().join('|') : 'default';
-      if (assignableCache.has(cacheKey)) {
-        return assignableCache.get(cacheKey);
-      }
-
-      const payload = normalizedRoles.length ? { roles: normalizedRoles } : {};
-      const response = await listForAssignCallable(payload);
-      const items = Array.isArray(response?.data?.items) ? response.data.items : [];
-
-      const seen = new Set();
-      const mapped = [];
-      items.forEach((item) => {
-        if (!item || typeof item.uid !== 'string') return;
-        const uid = item.uid;
-        if (seen.has(uid)) return;
-
-        const displayName =
-          (typeof item.displayName === 'string' && item.displayName.trim()) ||
-          (typeof item.email === 'string' && item.email.trim()) ||
-          'Unnamed User';
-        const email = typeof item.email === 'string' ? item.email.trim() : '';
-        const role = typeof item.role === 'string' ? item.role : 'controller';
-
-        mapped.push({
-          uid,
-          displayName,
-          email,
-          label: displayName || email || 'Unnamed User',
-          role
-        });
-        seen.add(uid);
-      });
-
-      assignableCache.set(cacheKey, mapped);
-      return mapped;
-    }
 
     function rememberSelectPreference(select, { uid = '', email = '', label = '' } = {}) {
       if (!select) return;
@@ -694,100 +675,6 @@
     // Initialize form service
     const formService = new FormService();
 
-    async function populateUserLists() {
-      const controllerSelects = [
-        { select: document.getElementById('controller1'), placeholder: 'Select Controller' },
-        { select: document.getElementById('controller2'), placeholder: 'Select Controller' }
-      ];
-
-      const reviewerSelects = [
-        { select: document.getElementById('reviewer1'), placeholder: 'Select Primary Reviewer' },
-        { select: document.getElementById('reviewer2'), placeholder: 'Select Secondary Reviewer (Optional)' }
-      ];
-
-      const allSelects = [...controllerSelects, ...reviewerSelects].map(item => item.select).filter(Boolean);
-      if (!allSelects.length) return;
-
-      const setLoadingState = (select, message) => {
-        if (!select) return;
-        select.innerHTML = '';
-        const option = document.createElement('option');
-        option.value = '';
-        option.textContent = message;
-        select.appendChild(option);
-      };
-
-      controllerSelects.forEach(({ select }) => setLoadingState(select, 'Loading controllers...'));
-      reviewerSelects.forEach(({ select }) => setLoadingState(select, 'Loading reviewers...'));
-
-        try {
-          const assignableUsers = await fetchAssignableUsers();
-
-          const controllers = assignableUsers
-            .filter((user) => user.role === 'controller')
-            .sort((a, b) => localeCollator.compare(a.label, b.label));
-
-          const reviewers = assignableUsers
-            .filter((user) => user.role === 'controller' || user.role === 'manager')
-            .sort((a, b) => localeCollator.compare(a.label, b.label));
-
-        const populateSelect = (select, users, placeholderText) => {
-          if (!select) return;
-          select.innerHTML = '';
-          const placeholderOption = document.createElement('option');
-          placeholderOption.value = '';
-          placeholderOption.textContent = placeholderText;
-          select.appendChild(placeholderOption);
-
-          users.forEach(user => {
-            const option = document.createElement('option');
-            option.value = user.uid;
-            option.textContent = user.label;
-            if (user.email) {
-              option.dataset.email = user.email;
-            }
-            option.dataset.role = user.role || '';
-            select.appendChild(option);
-          });
-
-          ensureSelectPreferenceListener(select);
-          applyPreferredSelectValue(select);
-        };
-
-        controllerSelects.forEach(({ select, placeholder }) => populateSelect(select, controllers, placeholder));
-        reviewerSelects.forEach(({ select, placeholder }) => populateSelect(select, reviewers, placeholder));
-
-        if (!controllers.length) {
-          console.warn('No active controllers returned by assignable user list.');
-        }
-        if (!reviewers.length) {
-          console.warn('No reviewer candidates returned by assignable user list.');
-        }
-      } catch (error) {
-        console.error('Failed to load controller/reviewer lists:', error);
-
-        controllerSelects.forEach(({ select }) => {
-          if (!select) return;
-          select.innerHTML = '';
-          const option = document.createElement('option');
-          option.value = '';
-          option.textContent = 'Unable to load controllers';
-          select.appendChild(option);
-        });
-
-        reviewerSelects.forEach(({ select }) => {
-          if (!select) return;
-          select.innerHTML = '';
-          const option = document.createElement('option');
-          option.value = '';
-          option.textContent = 'Unable to load reviewers';
-          select.appendChild(option);
-        });
-
-        showMessage('Could not load user lists. Please refresh or try again later.', 'error');
-      }
-    }
-
     // Authentication and form handling
     let currentUser = null;
     let currentUserRole = 'controller';
@@ -850,8 +737,6 @@
           
           updateDashboardLinks();
           roleResolved = true;
-
-          await populateUserLists();
 
           // Check if we're in view mode (reportId in URL)
           const urlParams = new URLSearchParams(window.location.search);

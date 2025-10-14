@@ -1,9 +1,10 @@
 {
   "scripts": {
-    "test": "jest --runInBand",
+    "test": "pnpm test:emu",
     "test:emu": "firebase emulators:exec --only firestore \"npx jest --runInBand\"",
     "test:watch": "jest --watch",
-    "emulator:start": "firebase emulators:start --only firestore"
+    "emulator:start": "firebase emulators:start --only firestore",
+    "typecheck": "node scripts/typecheck.js"
   },
   "dependencies": {
     "firebase-admin": "^13.5.0",

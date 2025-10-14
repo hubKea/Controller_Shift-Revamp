@@ -96,9 +96,41 @@ Controller_Shift-Revamp/
 
    This installs top-level dependencies (Firebase Admin SDK, Firebase Functions) and will hoist client-side test/dev tooling.
 
-3. **Configure Firebase**
+3. **Configure Firebase environment**
 
-   - Copy `firebase-config.js` template values if you are using a different project.
+   - Copy the sample environment file and fill in the values for your Firebase project:
+
+     ```bash
+     cp .env.sample .env
+     ```
+
+     | Variable | Description |
+     | -------- | ----------- |
+     | `FIREBASE_API_KEY` | Web API key from the Firebase console. |
+     | `FIREBASE_AUTH_DOMAIN` | Auth domain (usually `<project-id>.firebaseapp.com`). |
+     | `FIREBASE_PROJECT_ID` | Firebase project ID. |
+     | `FIREBASE_STORAGE_BUCKET` | Storage bucket (optional for this app). |
+     | `FIREBASE_MESSAGING_SENDER_ID` | Sender ID (used for messaging/analytics if enabled). |
+     | `FIREBASE_APP_ID` | Web app ID. |
+     | `FIREBASE_MEASUREMENT_ID` | Optional analytics measurement ID. |
+
+   - When serving pages as static HTML (without a bundler), expose the same values before loading `firebase-config.js` by providing a small script that sets `window.__FIREBASE_CONFIG__`. For example:
+
+     ```html
+     <script>
+       window.__FIREBASE_CONFIG__ = {
+         apiKey: '…',
+         authDomain: '…',
+         projectId: '…',
+         storageBucket: '…',
+         messagingSenderId: '…',
+         appId: '…',
+         measurementId: '…'
+       };
+     </script>
+     <script type="module" src="./firebase-config.js"></script>
+     ```
+
    - Update `.firebaserc` to point to your Firebase project ID.
    - See [USER_SETUP_GUIDE.md](./USER_SETUP_GUIDE.md) to seed initial users with the correct roles (`controller`, `manager`) and permissions (`canApprove`, `canViewAll`, etc.).
 
@@ -127,6 +159,12 @@ pnpm test
 ```
 
 Behind the scenes this calls the Firebase Emulator suite and runs Jest in-band so tests run against a clean Firestore instance. Use this before sending pull requests to catch regressions in timestamp logic or notification functions.
+
+Run the lightweight typecheck placeholder to ensure the repository’s TypeScript gate (currently a no-op) passes CI hooks:
+
+```bash
+pnpm typecheck
+```
 
 ### Emulator utilities
 
@@ -168,6 +206,8 @@ firebase deploy --only functions,firestore:rules,firestore:indexes
   - `onReportUnderReview`, `onReportDecision` – orchestrate inbox updates as reports move through the workflow.
   - `users-listForAssign` – callable endpoint exposing minimal user data for dropdowns.
   - `reviewerApproveReport`, `reviewerRejectReport` – callable endpoints allowing signed reviewers to submit decisions.
+
+- Sensitive values should be stored via `firebase functions:config:set` or function environment variables, not checked into source control.
 
 Deploying functions requires `iam.serviceAccounts.ActAs` permission on the default App Engine service account.
 

@@ -334,17 +334,65 @@
 
   <script type="module">
     // Firebase and utilities imports
-    import { auth, db } from './firebase-config.js';
-    import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-    import { collection, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
     import { userService } from './js/user-service.js';
     import { enhancedReportService } from './js/enhanced-report-service.js';
     import { nowIso } from './js/utils.js'; // Timestamp utility for client-side ISO strings
+    import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js';
     
     // Verify nowIso is loaded
     console.log('✅ nowIso function loaded:', typeof nowIso === 'function');
 
     const localeCollator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
+    const functionsInstance = getFunctions();
+    const listForAssignCallable = httpsCallable(functionsInstance, 'users-listForAssign');
+    const assignableCache = new Map();
+
+    async function fetchAssignableUsers(roles = ['controller', 'manager']) {
+      const normalizedRoles = Array.isArray(roles)
+        ? Array.from(
+            new Set(
+              roles
+                .map((role) => (typeof role === 'string' ? role.trim() : ''))
+                .filter(Boolean)
+            )
+          )
+        : [];
+      const cacheKey = normalizedRoles.length ? normalizedRoles.slice().sort().join('|') : 'default';
+      if (assignableCache.has(cacheKey)) {
+        return assignableCache.get(cacheKey);
+      }
+
+      const payload = normalizedRoles.length ? { roles: normalizedRoles } : {};
+      const response = await listForAssignCallable(payload);
+      const items = Array.isArray(response?.data?.items) ? response.data.items : [];
+
+      const seen = new Set();
+      const mapped = [];
+      items.forEach((item) => {
+        if (!item || typeof item.uid !== 'string') return;
+        const uid = item.uid;
+        if (seen.has(uid)) return;
+
+        const displayName =
+          (typeof item.displayName === 'string' && item.displayName.trim()) ||
+          (typeof item.email === 'string' && item.email.trim()) ||
+          'Unnamed User';
+        const email = typeof item.email === 'string' ? item.email.trim() : '';
+        const role = typeof item.role === 'string' ? item.role : 'controller';
+
+        mapped.push({
+          uid,
+          displayName,
+          email,
+          label: displayName || email || 'Unnamed User',
+          role
+        });
+        seen.add(uid);
+      });
+
+      assignableCache.set(cacheKey, mapped);
+      return mapped;
+    }
 
     function rememberSelectPreference(select, { uid = '', email = '', label = '' } = {}) {
       if (!select) return;
@@ -672,37 +720,16 @@
       controllerSelects.forEach(({ select }) => setLoadingState(select, 'Loading controllers...'));
       reviewerSelects.forEach(({ select }) => setLoadingState(select, 'Loading reviewers...'));
 
-      try {
-        const usersRef = collection(db, 'users');
-        const rolesToLoad = ['controller', 'manager', 'reviewer'];
-        const snapshot = await getDocs(query(usersRef, where('role', 'in', rolesToLoad)));
+        try {
+          const assignableUsers = await fetchAssignableUsers();
 
-        const controllers = [];
-        const reviewerMap = new Map();
+          const controllers = assignableUsers
+            .filter((user) => user.role === 'controller')
+            .sort((a, b) => localeCollator.compare(a.label, b.label));
 
-        snapshot.forEach(docSnap => {
-          const data = docSnap.data() || {};
-          if (data.isActive === false) return;
-
-          const displayName = (data.displayName || '').trim();
-          const email = (data.email || '').trim();
-          const role = data.role || '';
-          const uid = docSnap.id;
-
-          const label = displayName || email || 'Unnamed User';
-          const user = { uid, displayName, email, label, role };
-
-          if (role === 'controller') {
-            controllers.push(user);
-          }
-
-          if (role === 'manager' || role === 'controller' || role === 'reviewer') {
-            reviewerMap.set(uid, user);
-          }
-        });
-
-        controllers.sort((a, b) => localeCollator.compare(a.label, b.label));
-        const reviewers = Array.from(reviewerMap.values()).sort((a, b) => localeCollator.compare(a.label, b.label));
+          const reviewers = assignableUsers
+            .filter((user) => user.role === 'controller' || user.role === 'manager')
+            .sort((a, b) => localeCollator.compare(a.label, b.label));
 
         const populateSelect = (select, users, placeholderText) => {
           if (!select) return;
@@ -731,10 +758,10 @@
         reviewerSelects.forEach(({ select, placeholder }) => populateSelect(select, reviewers, placeholder));
 
         if (!controllers.length) {
-          console.warn('No active controllers found in Firestore users collection.');
+          console.warn('No active controllers returned by assignable user list.');
         }
         if (!reviewers.length) {
-          console.warn('No reviewer candidates found in Firestore users collection.');
+          console.warn('No reviewer candidates returned by assignable user list.');
         }
       } catch (error) {
         console.error('Failed to load controller/reviewer lists:', error);

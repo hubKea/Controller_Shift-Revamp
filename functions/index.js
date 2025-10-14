@@ -557,6 +557,77 @@ function collectControllerUids(after) {
   return Array.from(uids);
 }
 
+exports.users = {
+  listForAssign: functions.https.onCall(async (data, context) => {
+    if (!context.auth || !context.auth.uid) {
+      throw new functions.https.HttpsError('unauthenticated', 'Sign in required.');
+    }
+
+    const rawRoles = Array.isArray(data?.roles) ? data.roles : [];
+    const normalizedRoles = Array.from(
+      new Set(
+        rawRoles
+          .map((role) => (typeof role === 'string' ? role.trim() : ''))
+          .filter(Boolean)
+      )
+    );
+    const roles = normalizedRoles.length ? normalizedRoles : ['controller', 'manager'];
+
+    const MAX_IN_CLAUSE = 10;
+    const MAX_RESULTS = 200;
+    const roleChunks = [];
+    for (let index = 0; index < roles.length; index += MAX_IN_CLAUSE) {
+      roleChunks.push(roles.slice(index, index + MAX_IN_CLAUSE));
+    }
+
+    const firestore = admin.firestore();
+    const snapshots = await Promise.all(
+      roleChunks.map((chunk) =>
+        firestore
+          .collection('users')
+          .where('isActive', '==', true)
+          .where('role', 'in', chunk)
+          .limit(MAX_RESULTS)
+          .get()
+      )
+    );
+
+    const items = [];
+    const seen = new Set();
+
+    outer: for (const snap of snapshots) {
+      for (const docSnap of snap.docs) {
+        if (seen.has(docSnap.id)) {
+          continue;
+        }
+
+        const record = docSnap.data() || {};
+        const displayName =
+          (typeof record.displayName === 'string' && record.displayName.trim()) ||
+          (typeof record.name === 'string' && record.name.trim()) ||
+          (typeof record.email === 'string' && record.email.trim()) ||
+          'User';
+        const email = typeof record.email === 'string' ? record.email.trim() : '';
+        const role = typeof record.role === 'string' ? record.role : 'controller';
+
+        items.push({
+          uid: docSnap.id,
+          displayName,
+          email,
+          role
+        });
+        seen.add(docSnap.id);
+
+        if (items.length >= MAX_RESULTS) {
+          break outer;
+        }
+      }
+    }
+
+    return { items };
+  })
+};
+
 exports.sendReviewRequestEmail = functions.firestore
   .document('shiftReports/{reportId}')
   .onWrite(async (change, context) => {

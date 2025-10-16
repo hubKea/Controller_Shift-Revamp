@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "test": "pnpm test:emu",
+    "test": "jest tests/utils.test.js --runInBand",
+    "test:all": "jest --runInBand",
     "test:emu": "firebase emulators:exec --only firestore \"npx jest --runInBand\"",
     "test:watch": "jest --watch",
     "emulator:start": "firebase emulators:start --only firestore",

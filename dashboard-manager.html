@@ -58,10 +58,6 @@
             </nav>
 </div>
 <div class="flex items-center gap-4">
-<div class="relative w-64">
-<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"> search </span>
-<input id="dashboard-search" class="w-full rounded-lg border-gray-200 bg-gray-100 py-2 pl-10 pr-4 text-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Search..." type="search"/>
-</div>
 <img alt="User avatar" class="h-10 w-10 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCoPYRdSfCqYfb4NhCX3jQXBm1Ez3hW2w94XONh8XGBLIiWXGflZi3xxusB-TgdTDgkm5sJaC85W2CpTTRuuqvUYUvFn5IngpJCCwODSLU6IpWckhykBhiiSabcN_X2A7VO0uFIb6sO1XiWEDm7ATx_viQtMC1Pc9sf3nqmgBumAO2a-_Q-g2DXEDHDLUQ5E-SNdTbdiZ1li-il8624rwBAXAfpet9zjFHb8Ckng2EldWzW-XVMg-hGdCiJ4ljJYEr9Ie5lFmVHkgEq"/>
 </div>
 </header>
@@ -80,7 +76,27 @@
 </a>
 </div>
 <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6">
-<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+<div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+<div class="w-full lg:max-w-md">
+<label class="block text-sm font-medium text-gray-700" for="dashboard-search">Search Reports</label>
+<div class="relative mt-1">
+<span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+<input id="dashboard-search" class="w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Search by site or controller name" type="search" autocomplete="off" />
+</div>
+<p class="mt-1 text-xs text-gray-500">Results update automatically after you stop typing.</p>
+</div>
+<div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+<button id="filter-clear" class="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400" type="button">
+<span class="material-symbols-outlined">refresh</span>
+<span>Reset</span>
+</button>
+<button id="filter-apply" class="flex w-full items-center justify-center gap-2 rounded-lg border border-transparent bg-gray-800 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900" type="button">
+<span class="material-symbols-outlined">filter_list</span>
+<span>Apply Filters</span>
+</button>
+</div>
+</div>
+<div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
 <div>
 <label class="block text-sm font-medium text-gray-700" for="date-range">Date Range</label>
 <input class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" id="date-range" name="date-range" placeholder="Select Date Range" type="text"/>
@@ -88,31 +104,24 @@
 <div>
 <label class="block text-sm font-medium text-gray-700" for="controller">Controller</label>
 <select class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" id="controller" name="controller">
-<option>All Controllers</option>
+<option value="">All Controllers</option>
 <!-- Dynamic options will be populated here by JavaScript -->
 </select>
 </div>
 <div>
 <label class="block text-sm font-medium text-gray-700" for="status">Status</label>
-<select class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" id="status" name="status">
-<option>All Statuses</option>
+<select class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" id="status" name="status" multiple size="5">
+<option value="">All Statuses</option>
 <option value="draft">Draft</option>
 <option value="submitted">Pending Review</option>
 <option value="under_review">Under Review</option>
 <option value="approved">Approved</option>
 <option value="rejected">Rejected</option>
 </select>
+<p class="mt-1 text-xs text-gray-500">Select one or more statuses (Ctrl/Cmd + Click).</p>
 </div>
-<div class="flex flex-col gap-2 self-end sm:flex-row">
-<button id="filter-clear" class="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50" type="button">
-<span class="material-symbols-outlined">clear_all</span>
-<span>Clear Filters</span>
-</button>
-<button id="filter-apply" class="flex w-full items-center justify-center gap-2 rounded-lg border border-transparent bg-gray-800 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gray-700" type="button">
-<span class="material-symbols-outlined"> filter_list </span>
-<span>Apply Filters</span>
-</button>
-</div>
+<div id="filters-active-indicator" class="mt-4 hidden rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-700">
+Filters active
 </div>
 </div>
 <div class="overflow-hidden rounded-lg border border-gray-200 bg-white">
@@ -157,3 +166,4 @@
     });
   </script>
 </body></html>
+

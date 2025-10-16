@@ -10,6 +10,7 @@ const {
   setDoc,
   getDoc,
   updateDoc,
+  deleteDoc,
   collection,
   query,
   orderBy,
@@ -37,6 +38,7 @@ describe('shiftReports timestamp lifecycle', () => {
       await setDoc(doc(adminDb, 'users', controllerUid), {
         uid: controllerUid,
         email: 'controller@example.com',
+        displayName: 'Test Controller',
         role: 'controller',
         permissions: {
           canCreateReports: true,
@@ -54,7 +56,13 @@ describe('shiftReports timestamp lifecycle', () => {
   });
 
   afterEach(async () => {
-    await testEnv.clearFirestore();
+    // Clear only shiftReports, keep user data for security rules
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      const reportsSnapshot = await getDocs(collection(adminDb, 'shiftReports'));
+      const deletePromises = reportsSnapshot.docs.map(docSnap => deleteDoc(docSnap.ref));
+      await Promise.all(deletePromises);
+    });
   });
 
   afterAll(async () => {
@@ -77,6 +85,8 @@ describe('shiftReports timestamp lifecycle', () => {
       status: 'draft',
       version: 1,
       createdBy: controllerUid,
+      controller1: '',
+      controller2: '',
       createdAt: createdAtSentinel,
       createdAtServer: createdAtSentinel,
       createdAtClientIso: createdIso,
@@ -94,6 +104,8 @@ describe('shiftReports timestamp lifecycle', () => {
       status: 'draft',
       version: 1,
       createdBy: controllerUid,
+      controller1: '',
+      controller2: '',
       createdAt: secondCreatedSentinel,
       createdAtServer: secondCreatedSentinel,
       createdAtClientIso: secondaryIso,

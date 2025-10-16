@@ -1,4 +1,4 @@
-# Controller Shift Report Revamp
+﻿# Controller Shift Report Revamp
 
 ## Overview
 
@@ -178,13 +178,19 @@ pnpm typecheck
 
 ## Linting and Formatting
 
-Run the project linter prior to committing:
+ESLint + Prettier enforce consistent HTML/JS style. Run the checks before committing:
 
 ```bash
 pnpm lint
 ```
 
-If a lint script is not yet defined you can add one (e.g., using ESLint) or run your editor’s formatter; the goal is to maintain consistent code style across HTML and JS modules.
+Automatically apply safe fixes with:
+
+```bash
+pnpm lint:fix
+```
+
+The `.eslintrc.cjs` config extends `eslint:recommended` and enables Prettier via `plugin:prettier/recommended`, while `.prettierrc` sets defaults such as `singleQuote`, `trailingComma: "es5"`, and `printWidth: 100`. Editors wired to ESLint/Prettier will now format files consistently with the CI pipeline.
 
 ## Deployment
 

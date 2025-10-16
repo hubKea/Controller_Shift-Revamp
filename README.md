@@ -223,6 +223,13 @@ When adding new collection fields or business rules:
 2. Audit Firestore security rules to ensure permissions stay tight.
 3. Extend client validators (`DataValidator.validateShiftReport`) and tests to cover the new behaviour.
 
+## Continuous Integration
+
+- GitHub Actions runs the `CI` workflow on every push and pull request targeting `main`.
+- The workflow installs dependencies with `pnpm`, restores the pnpm store cache, and executes `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm run build`.
+- Emulator environment variables (`FIREBASE_*_EMULATOR_HOST`) are exported during tests so suites can talk to local Firebase emulators when needed.
+- Pipeline failures block merges, ensuring code quality checks stay green before landing changes.
+
 ## Contributing Guidelines
 
 1. **Fork or branch** from `main` before implementing features.

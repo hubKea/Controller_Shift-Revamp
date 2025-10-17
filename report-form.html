@@ -65,6 +65,10 @@
         </nav>
       </div>
       <div class="flex items-center gap-4">
+        <button id="messagesButton" type="button" class="relative flex h-10 w-10 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2" aria-label="Messages">
+          <span class="material-symbols-outlined">chat</span>
+          <span id="messagesUnreadBadge" class="pointer-events-none absolute -top-1.5 -right-1.5 hidden min-w-[1.5rem] rounded-full bg-red-500 px-1.5 py-0.5 text-center text-xs font-semibold leading-none text-white" aria-live="polite" aria-atomic="true"></span>
+        </button>
         <button class="relative rounded-full p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700">
           <span class="material-symbols-outlined"> notifications </span>
         </button>
@@ -361,12 +365,94 @@
 
   <!-- Firebase Services -->
   <script type="module" src="firebase-config.js"></script>
-  <script type="module" src="js/user-service.js"></script>
-  <script type="module" src="js/enhanced-report-service.js"></script>
-  <script type="module" src="js/data-model.js"></script>
-  <script type="module" src="js/app.js"></script>
+    <script type="module" src="js/user-service.js"></script>
+    <script type="module" src="js/enhanced-report-service.js"></script>
+    <script type="module" src="js/data-model.js"></script>
+    <script type="module" src="js/app.js"></script>
+    <script type="module">
+      import { userService } from "./js/user-service.js";
+      import { subscribeUserConversations } from "./js/messages-service.js";
 
-  <script type="module">
+      const messagesButton = document.getElementById("messagesButton");
+      const unreadBadge = document.getElementById("messagesUnreadBadge");
+
+      if (messagesButton && unreadBadge) {
+        const navigateToMessages = () => {
+          window.location.href = "messages.html";
+        };
+
+        messagesButton.addEventListener("click", navigateToMessages);
+        messagesButton.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            navigateToMessages();
+          }
+        });
+
+        const updateBadge = (totalUnread) => {
+          if (totalUnread > 0) {
+            unreadBadge.textContent = String(totalUnread);
+            unreadBadge.classList.remove("hidden");
+          } else {
+            unreadBadge.textContent = "";
+            unreadBadge.classList.add("hidden");
+          }
+        };
+
+        let unsubscribe = null;
+
+        const attachSubscription = (uid) => {
+          if (unsubscribe) {
+            unsubscribe();
+            unsubscribe = null;
+          }
+          if (!uid) {
+            updateBadge(0);
+            return;
+          }
+          unsubscribe = subscribeUserConversations(uid, (conversations) => {
+            const total = Array.isArray(conversations)
+              ? conversations.reduce((acc, conversation) => {
+                  const count = conversation?.unreadCount?.[uid];
+                  return acc + (typeof count === "number" ? count : 0);
+                }, 0)
+              : 0;
+            updateBadge(total);
+          });
+        };
+
+        const previousHandler =
+          typeof userService.onAuthStateChange === "function"
+            ? userService.onAuthStateChange.bind(userService)
+            : null;
+
+        userService.onAuthStateChange = (user, role, permissions) => {
+          if (typeof previousHandler === "function") {
+            try {
+              previousHandler(user, role, permissions);
+            } catch (error) {
+              console.warn("[messages-nav] previous auth handler failed", error);
+            }
+          }
+          attachSubscription(user && user.uid ? user.uid : "");
+        };
+
+        const current =
+          typeof userService.getCurrentUser === "function" ? userService.getCurrentUser() : null;
+        if (current?.isAuthenticated && current.user?.uid) {
+          attachSubscription(current.user.uid);
+        }
+
+        window.addEventListener("beforeunload", () => {
+          if (typeof unsubscribe === "function") {
+            unsubscribe();
+            unsubscribe = null;
+          }
+        });
+      }
+    </script>
+  
+    <script type="module">
     // Firebase and utilities imports
     import { userService } from './js/user-service.js';
     import { enhancedReportService } from './js/enhanced-report-service.js';

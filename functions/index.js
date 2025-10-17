@@ -593,6 +593,127 @@ function collectControllerUids(after) {
   return Array.from(uids);
 }
 
+function sanitizeUid(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim();
+}
+
+function uniqueStringArray(values = []) {
+  const set = new Set();
+  values.forEach((value) => {
+    const normalized = sanitizeUid(value);
+    if (normalized) {
+      set.add(normalized);
+    }
+  });
+  return Array.from(set);
+}
+
+async function gatherConversationParticipantUids(reportData) {
+  if (!reportData) return [];
+
+  const participantSet = new Set();
+  const controllerUids = collectControllerUids(reportData);
+  controllerUids.forEach((uid) => participantSet.add(sanitizeUid(uid)));
+
+  [reportData.createdBy, reportData.submittedBy, reportData.controller1Uid, reportData.controller2Uid]
+    .map(sanitizeUid)
+    .forEach((uid) => {
+      if (uid) participantSet.add(uid);
+    });
+
+  const reviewerUids = await resolveReviewers(reportData);
+  reviewerUids.forEach((uid) => participantSet.add(sanitizeUid(uid)));
+
+  return Array.from(participantSet).filter(Boolean);
+}
+
+async function getOrCreateConversation(reportId, reportData, participantUids = []) {
+  const conversationRef = db.collection('conversations').doc(reportId);
+  const cleanedParticipants = uniqueStringArray(participantUids);
+  if (!cleanedParticipants.length) {
+    return { conversationRef, participants: cleanedParticipants };
+  }
+
+  const shiftDate = reportData?.reportDate || reportData?.shiftDate || null;
+  const siteName = reportData?.siteName || reportData?.startingDestination || null;
+
+  let finalParticipants = cleanedParticipants;
+
+  await db.runTransaction(async (tx) => {
+    const snapshot = await tx.get(conversationRef);
+    if (!snapshot.exists) {
+      const unreadCount = {};
+      cleanedParticipants.forEach((uid) => {
+        unreadCount[uid] = 0;
+      });
+
+      tx.set(conversationRef, {
+        reportId,
+        participants: cleanedParticipants,
+        shiftDate,
+        siteName,
+        unreadCount,
+        createdAt: FieldValue.serverTimestamp(),
+        lastMessageAt: null
+      });
+      return;
+    }
+
+    const existing = snapshot.data() || {};
+    const existingParticipants = Array.isArray(existing.participants)
+      ? existing.participants.filter((uid) => typeof uid === 'string' && uid)
+      : [];
+
+    const merged = uniqueStringArray([...existingParticipants, ...cleanedParticipants]);
+    finalParticipants = merged;
+
+    const updates = {
+      participants: merged,
+      shiftDate,
+      siteName
+    };
+
+    tx.update(conversationRef, updates);
+
+    const unreadUpdates = {};
+    merged.forEach((uid) => {
+      const currentValue =
+        existing.unreadCount && typeof existing.unreadCount[uid] === 'number'
+          ? existing.unreadCount[uid]
+          : null;
+      if (currentValue === null) {
+        unreadUpdates[`unreadCount.${uid}`] = 0;
+      }
+    });
+
+    if (Object.keys(unreadUpdates).length) {
+      tx.update(conversationRef, unreadUpdates);
+    }
+  });
+
+  return { conversationRef, participants: finalParticipants };
+}
+
+async function addSystemMessage(conversationRef, { content, senderId, senderName, system = true }) {
+  if (!conversationRef) return null;
+
+  const resolvedSenderId = sanitizeUid(senderId) || 'system';
+  const resolvedSenderName = senderName || 'System';
+  const payload = {
+    senderId: resolvedSenderId,
+    senderName: resolvedSenderName,
+    content: content || '',
+    timestamp: FieldValue.serverTimestamp()
+  };
+
+  if (system !== undefined) {
+    payload.system = Boolean(system);
+  }
+
+  return conversationRef.collection('messages').add(payload);
+}
+
 exports.users = {
   listForAssign: functions.https.onCall(async (data, context) => {
     if (!context.auth || !context.auth.uid) {
@@ -678,7 +799,7 @@ exports.sendReviewRequestEmail = functions.firestore
 
     const reportRef = afterSnap.ref;
     const nowTs = Timestamp.now();
-    const pendingEmails = [];
+    let tokenUpdates = false;
 
     await db.runTransaction(async (tx) => {
       const snapshot = await tx.get(reportRef);
@@ -707,7 +828,6 @@ exports.sendReviewRequestEmail = functions.firestore
 
         const token = createReviewerToken();
         const name = reviewer.name || reviewer.reviewerName || email;
-        const link = `${APPROVAL_PAGE}?reportId=${encodeURIComponent(context.params.reportId)}&token=${encodeURIComponent(token)}`;
 
         const normalizedReviewer = {
           ...reviewer,
@@ -727,22 +847,10 @@ exports.sendReviewRequestEmail = functions.firestore
         };
 
         updatedReviewers[index] = normalizedReviewer;
-
-        pendingEmails.push({
-          email,
-          name,
-          link,
-          report: {
-            id: context.params.reportId,
-            shiftDate: current.reportDate || current.shiftDate,
-            shiftType: current.shiftType,
-            siteName: current.siteName || current.startingDestination,
-            controllers: [current.controller1, current.controller2].filter(Boolean),
-          },
-        });
+        tokenUpdates = true;
       });
 
-      if (pendingEmails.length === 0) {
+      if (!tokenUpdates) {
         return;
       }
 
@@ -757,26 +865,84 @@ exports.sendReviewRequestEmail = functions.firestore
       });
     });
 
-    if (!pendingEmails.length) {
+    return null;
+  });
+
+exports.onReportSubmitted = functions.firestore
+  .document('shiftReports/{reportId}')
+  .onUpdate(async (change, context) => {
+    if (!change.before.exists || !change.after.exists) {
       return null;
     }
 
-    await Promise.all(
-      pendingEmails.map((entry) => {
-        const subject = `Action Required: Please Review the Shift Report for ${formatDateForEmail(entry.report.shiftDate)}`;
-        const html = buildReviewEmailHtml(entry.report, entry.name, entry.link);
-        const text = buildReviewEmailText(entry.report, entry.name, entry.link);
+    const beforeData = change.before.data();
+    const afterData = change.after.data();
+    const beforeStatus = normalizeStatus(beforeData.status);
+    const afterStatus = normalizeStatus(afterData.status);
 
-        return db.collection(MAIL_COLLECTION).add({
-          to: [entry.email],
-          message: {
-            subject,
-            html,
-            text,
-          },
+    if (beforeStatus === afterStatus || afterStatus !== 'submitted') {
+      return null;
+    }
+
+    try {
+      const participantUids = await gatherConversationParticipantUids(afterData);
+      if (!participantUids.length) {
+        return null;
+      }
+
+      const { conversationRef } = await getOrCreateConversation(
+        context.params.reportId,
+        afterData,
+        participantUids
+      );
+
+      let submitterUid = sanitizeUid(afterData.submittedBy) || sanitizeUid(afterData.createdBy);
+      if (!submitterUid) {
+        const controllers = collectControllerUids(afterData);
+        if (controllers.length) {
+          submitterUid = sanitizeUid(controllers[0]);
+        }
+      }
+
+      let submitterName = 'Shift Controller';
+      if (afterData.controller1 && typeof afterData.controller1 === 'object') {
+        if (typeof afterData.controller1.name === 'string' && afterData.controller1.name.trim()) {
+          submitterName = afterData.controller1.name.trim();
+        } else if (
+          typeof afterData.controller1.displayName === 'string' &&
+          afterData.controller1.displayName.trim()
+        ) {
+          submitterName = afterData.controller1.displayName.trim();
+        }
+      } else if (typeof afterData.controller1 === 'string' && afterData.controller1.trim()) {
+        submitterName = afterData.controller1.trim();
+      }
+
+      let submitterIdentity = null;
+      if (submitterUid) {
+        submitterIdentity = await getUserIdentityByUid(submitterUid);
+        if (submitterIdentity) {
+          submitterUid = submitterIdentity.uid;
+          submitterName =
+            submitterIdentity.displayName || submitterIdentity.email || submitterName;
+        }
+      }
+
+      const messageText = `${submitterName} submitted a shift report and requests review.`;
+      await addSystemMessage(conversationRef, {
+        content: messageText,
+        senderId: submitterUid || 'system',
+        senderName: submitterName,
+        system: true
+      });
+    } catch (error) {
+      if (functions.logger) {
+        functions.logger.error('Failed to handle conversation creation on submission', {
+          reportId: context.params.reportId,
+          error: error.message
         });
-      })
-    );
+      }
+    }
 
     return null;
   });
@@ -884,15 +1050,16 @@ exports.onReportDecision = functions.firestore
     let actorEmail = null;
 
     const approvals = Array.isArray(afterData.approvals) ? afterData.approvals : [];
-    if (!actorUid && approvals.length) {
-      const latest = approvals[approvals.length - 1];
-      if (latest && typeof latest === 'object') {
-        if (typeof latest.approverId === 'string') {
-          actorUid = latest.approverId.trim();
-        }
-        if (typeof latest.approverName === 'string' && latest.approverName.trim()) {
-          actorName = latest.approverName.trim();
-        }
+    let latestApproval = null;
+    if (approvals.length) {
+      latestApproval = approvals[approvals.length - 1] || null;
+    }
+    if (!actorUid && latestApproval && typeof latestApproval === 'object') {
+      if (typeof latestApproval.approverId === 'string') {
+        actorUid = latestApproval.approverId.trim();
+      }
+      if (typeof latestApproval.approverName === 'string' && latestApproval.approverName.trim()) {
+        actorName = latestApproval.approverName.trim();
       }
     }
 
@@ -985,6 +1152,106 @@ exports.onReportDecision = functions.firestore
         });
       })
     );
+
+    try {
+      const participantUids = await gatherConversationParticipantUids(afterData);
+      if (actorIdentity && actorIdentity.uid) {
+        participantUids.push(actorIdentity.uid);
+      }
+
+      const { conversationRef } = await getOrCreateConversation(
+        reportId,
+        afterData,
+        participantUids
+      );
+
+      const decisionEmoji = afterStatus === 'approved' ? '✅' : '❌';
+      let decisionText =
+        afterStatus === 'approved'
+          ? `${decisionEmoji} ${actorName} approved the shift report.`
+          : `${decisionEmoji} ${actorName} rejected the shift report.`;
+
+      if (afterStatus === 'rejected') {
+        const rejectionReason =
+          (typeof afterData.rejectionReason === 'string' && afterData.rejectionReason.trim()) ||
+          (latestApproval &&
+            typeof latestApproval === 'object' &&
+            typeof latestApproval.rejectionComment === 'string' &&
+            latestApproval.rejectionComment.trim()) ||
+          null;
+        if (rejectionReason) {
+          decisionText += ` ${rejectionReason}`;
+        }
+      }
+
+      await addSystemMessage(conversationRef, {
+        content: decisionText,
+        senderId: sanitizeUid(actorId) || 'system',
+        senderName: actorName,
+        system: true
+      });
+    } catch (error) {
+      if (functions.logger) {
+        functions.logger.error('Failed to append decision message to conversation', {
+          reportId,
+          error: error.message
+        });
+      }
+    }
+
+    return null;
+  });
+
+exports.onConversationMessageCreated = functions.firestore
+  .document('conversations/{conversationId}/messages/{messageId}')
+  .onCreate(async (snapshot, context) => {
+    const message = snapshot.data();
+    const conversationRef = snapshot.ref.parent.parent;
+    if (!conversationRef) {
+      return null;
+    }
+
+    const senderId = sanitizeUid(message.senderId);
+    let messageTimestamp = null;
+    if (message.timestamp instanceof Timestamp) {
+      messageTimestamp = message.timestamp;
+    } else if (message.timestamp && typeof message.timestamp.toDate === 'function') {
+      messageTimestamp = message.timestamp;
+    }
+
+    await db.runTransaction(async (tx) => {
+      const convoSnap = await tx.get(conversationRef);
+      if (!convoSnap.exists) {
+        return;
+      }
+
+      const convoData = convoSnap.data() || {};
+      const participants = Array.isArray(convoData.participants)
+        ? convoData.participants.filter((uid) => typeof uid === 'string' && uid)
+        : [];
+
+      if (!participants.length) {
+        return;
+      }
+
+      const unreadUpdates = {};
+      participants.forEach((uid) => {
+        if (uid === senderId) {
+          if (!convoData.unreadCount || typeof convoData.unreadCount?.[uid] !== 'number') {
+            unreadUpdates[`unreadCount.${uid}`] = 0;
+          }
+        } else {
+          unreadUpdates[`unreadCount.${uid}`] = FieldValue.increment(1);
+        }
+      });
+
+      const updatePayload = {
+        lastMessageAt: messageTimestamp || FieldValue.serverTimestamp()
+      };
+
+      Object.assign(updatePayload, unreadUpdates);
+      tx.update(conversationRef, updatePayload);
+    });
 
     return null;
   });

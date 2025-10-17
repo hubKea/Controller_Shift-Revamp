@@ -133,6 +133,64 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /conversations/{conversationId} {
+      function isConversationParticipant() {
+        return isAuthenticated() && resource.data.participants.hasAny([request.auth.uid]);
+      }
+
+      allow get, list: if isConversationParticipant();
+
+      allow create: if isAuthenticated() &&
+        request.resource.data.reportId is string &&
+        request.resource.data.shiftDate is string &&
+        request.resource.data.siteName is string &&
+        request.resource.data.participants is list &&
+        request.resource.data.participants.size() > 0 &&
+        request.resource.data.participants.all(participant, participant is string) &&
+        request.auth.uid in request.resource.data.participants &&
+        request.resource.data.unreadCount is map &&
+        request.resource.data.unreadCount.keys().hasOnly(request.resource.data.participants) &&
+        request.resource.data.participants.hasOnly(request.resource.data.unreadCount.keys()) &&
+        request.resource.data.unreadCount.keys().all(participant, request.resource.data.unreadCount[participant] is number) &&
+        request.resource.data.createdAt == request.time &&
+        (request.resource.data.lastMessageAt == null || request.resource.data.lastMessageAt == request.time);
+
+      allow update: if isConversationParticipant() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['unreadCount']) &&
+        request.resource.data.unreadCount is map &&
+        request.resource.data.unreadCount.keys().hasOnly(resource.data.unreadCount.keys()) &&
+        resource.data.unreadCount.keys().hasOnly(request.resource.data.unreadCount.keys()) &&
+        request.resource.data.unreadCount[request.auth.uid] is number &&
+        request.resource.data.unreadCount[request.auth.uid] == 0 &&
+        resource.data.unreadCount.keys().all(key,
+          key == request.auth.uid || request.resource.data.unreadCount[key] == resource.data.unreadCount[key]
+        );
+
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        function parentConversation() {
+          return get(/databases/$(database)/documents/conversations/$(conversationId));
+        }
+
+        function messageParticipant() {
+          return isAuthenticated() && parentConversation().data.participants.hasAny([request.auth.uid]);
+        }
+
+        allow get, list: if messageParticipant();
+
+        allow create: if messageParticipant() &&
+          request.resource.data.senderId == request.auth.uid &&
+          request.resource.data.senderName is string &&
+          request.resource.data.content is string &&
+          request.resource.data.timestamp == request.time &&
+          (request.resource.data.system == null || request.resource.data.system == false);
+
+        allow update: if false;
+        allow delete: if false;
+      }
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

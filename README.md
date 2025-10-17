@@ -193,6 +193,12 @@ pnpm lint:fix
 The `.eslintrc.cjs` config extends `eslint:recommended` and enables Prettier via `plugin:prettier/recommended`, while `.prettierrc` sets defaults such as `singleQuote`, `trailingComma: "es5"`, and `printWidth: 100`. Editors wired to ESLint/Prettier will now format files consistently with the CI pipeline.
 Legacy HTML screens and the current manager dashboard controller are temporarily excluded via `.eslintignore` until they are refactored to valid module-friendly markup.
 
+## PDF Generation
+
+- Controllers can generate a PDF from the read-only report view, and managers/controllers can download the same document from their dashboards.
+- PDF creation happens entirely in the browser via jsPDF and autoTable; generated files download immediately using a descriptive filename (`ShiftReport_<date>_<site>.pdf`).
+- The document metadata (`pdfGenerated`/`pdfUrl`) is updated in Firestore after a successful export. Uploading the blob to Firebase Storage is not yet automated—future work can wire this into a callable function once the storage flow is approved.
+
 ## Deployment
 
 The workflow typically involves three deployment targets: Firestore rules, Firestore indexes, and Cloud Functions. After validating changes locally:

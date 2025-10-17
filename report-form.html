@@ -371,9 +371,13 @@
     import { userService } from './js/user-service.js';
     import { enhancedReportService } from './js/enhanced-report-service.js';
     import { nowIso } from './js/utils.js'; // Timestamp utility for client-side ISO strings
+    import { generatePdf } from './js/pdf-service.js';
     
     // Verify nowIso is loaded
     console.log('✅ nowIso function loaded:', typeof nowIso === 'function');
+    let currentReportId = null;
+    let currentReportData = null;
+    const generatePdfBtn = document.getElementById('generatePdfBtn');
 
     function rememberSelectPreference(select, { uid = '', email = '', label = '' } = {}) {
       if (!select) return;
@@ -675,6 +679,40 @@
     // Initialize form service
     const formService = new FormService();
 
+    if (generatePdfBtn) {
+      const pdfIcon = generatePdfBtn.querySelector('.material-symbols-outlined');
+      const originalIcon = pdfIcon ? pdfIcon.textContent : null;
+      generatePdfBtn.addEventListener('click', async () => {
+        if (!currentReportId || !currentReportData) {
+          showMessage('Report must be loaded before generating a PDF.', 'error');
+          return;
+        }
+        try {
+          generatePdfBtn.disabled = true;
+          generatePdfBtn.classList.add('opacity-70', 'cursor-wait');
+          if (pdfIcon && originalIcon) {
+            pdfIcon.textContent = 'downloading';
+          }
+          showMessage('Generating PDF...', 'info');
+          await generatePdf(currentReportData, { autoDownload: true });
+          currentReportData.pdfGenerated = true;
+          if (typeof enhancedReportService.markPdfGenerated === 'function') {
+            await enhancedReportService.markPdfGenerated(currentReportId);
+          }
+          showMessage('PDF generated successfully. Check your downloads folder.', 'success');
+        } catch (error) {
+          console.error('Error generating PDF:', error);
+          showMessage('Failed to generate PDF: ' + (error.message || error), 'error');
+        } finally {
+          generatePdfBtn.disabled = false;
+          generatePdfBtn.classList.remove('opacity-70', 'cursor-wait');
+          if (pdfIcon && originalIcon) {
+            pdfIcon.textContent = originalIcon;
+          }
+        }
+      });
+    }
+
     // Authentication and form handling
     let currentUser = null;
     let currentUserRole = 'controller';
@@ -741,10 +779,17 @@
           // Check if we're in view mode (reportId in URL)
           const urlParams = new URLSearchParams(window.location.search);
           const reportId = urlParams.get('reportId');
-          
+
+          if (generatePdfBtn) {
+            generatePdfBtn.style.display = 'none';
+            generatePdfBtn.disabled = true;
+          }
+
           if (reportId) {
             await loadReportForView(reportId);
           } else {
+            currentReportId = null;
+            currentReportData = null;
             // Only enable buttons if authenticated and not in view mode
             const sendForReviewBtn = document.getElementById('sendForReviewBtn');
             const saveAsDraftBtn = document.getElementById('saveAsDraftBtn');
@@ -1009,10 +1054,21 @@
         
         if (!reportDoc.exists()) {
           showMessage('Report not found', 'error');
+          if (generatePdfBtn) {
+            generatePdfBtn.style.display = 'none';
+            generatePdfBtn.disabled = true;
+          }
           return;
         }
         
         const reportData = reportDoc.data();
+        reportData.id = reportId;
+        currentReportId = reportId;
+        currentReportData = { ...reportData };
+        if (generatePdfBtn) {
+          generatePdfBtn.style.display = 'flex';
+          generatePdfBtn.disabled = false;
+        }
         
         // Set view mode
         window.isViewMode = true;
@@ -1031,6 +1087,12 @@
       } catch (error) {
         console.error('Error loading report:', error);
         showMessage('Error loading report: ' + error.message, 'error');
+        currentReportId = null;
+        currentReportData = null;
+        if (generatePdfBtn) {
+          generatePdfBtn.style.display = 'none';
+          generatePdfBtn.disabled = true;
+        }
       }
     }
 

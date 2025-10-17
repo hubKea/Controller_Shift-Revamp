@@ -155,6 +155,30 @@ class EnhancedReportService {
     }
   }
 
+  async markPdfGenerated(reportId, options = {}) {
+    try {
+      const currentUser = userService.getCurrentUser();
+      if (!currentUser.isAuthenticated) {
+        throw new Error('User must be authenticated to update reports');
+      }
+
+      const payload = {
+        pdfGenerated: true,
+        ...buildTimestampFields({ clientTimestampIso: nowIso() }),
+      };
+
+      if (Object.prototype.hasOwnProperty.call(options, 'pdfUrl')) {
+        payload.pdfUrl = options.pdfUrl || '';
+      }
+
+      await updateDoc(doc(db, this.reportsCollection, reportId), payload);
+      return { success: true };
+    } catch (error) {
+      console.error('Mark PDF generated error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
   // Submit a report for review
   async submitReport(reportId) {
     try {

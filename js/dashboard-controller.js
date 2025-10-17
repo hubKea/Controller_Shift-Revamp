@@ -2,6 +2,7 @@
 import { db } from "../firebase-config.js";
 import { userService } from "./user-service.js";
 import { enhancedReportService } from "./enhanced-report-service.js";
+import { generatePdf } from "./pdf-service.js";
 import {
   collection,
   query,
@@ -422,6 +423,47 @@ export class DashboardBase {
     }, 5000);
   }
 
+  async downloadPDF(reportId) {
+    if (!reportId) {
+      this.showMessage("Invalid report identifier provided.", "error");
+      return;
+    }
+
+    try {
+      this.showLoading("Preparing PDF...");
+      const response = await enhancedReportService.getReport(reportId);
+      if (!response.success) {
+        throw new Error(response.error || "Unable to fetch report data");
+      }
+
+      const reportData = { id: reportId, ...(response.data || {}) };
+
+      if (reportData.pdfUrl && typeof window !== "undefined") {
+        window.open(reportData.pdfUrl, "_blank", "noopener");
+        this.showMessage("Opening stored PDF file...", "success");
+        return;
+      }
+
+      await generatePdf(reportData, { autoDownload: true });
+
+      if (typeof enhancedReportService.markPdfGenerated === "function") {
+        await enhancedReportService.markPdfGenerated(reportId);
+      }
+
+      const reportIndex = this.reports.findIndex((item) => item.id === reportId);
+      if (reportIndex >= 0) {
+        this.reports[reportIndex] = { ...this.reports[reportIndex], pdfGenerated: true };
+      }
+
+      this.showMessage("PDF downloaded successfully!", "success");
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      this.showMessage("Failed to generate PDF: " + (error.message || error), "error");
+    } finally {
+      this.hideLoading();
+    }
+  }
+
   updateHeader() {
     const userAvatar = document.querySelector(
       '.h-10.w-10.rounded-full, header img[alt="User avatar"]'
@@ -620,15 +662,7 @@ export class DashboardController extends DashboardBase {
   }
 
   async downloadPDF(reportId) {
-    try {
-      this.showLoading("Preparing PDF...");
-      this.showMessage("PDF generation will be implemented in the next phase.", "info");
-    } catch (error) {
-      console.error("Error downloading PDF:", error);
-      this.showMessage("Failed to generate PDF: " + (error.message || error), "error");
-    } finally {
-      this.hideLoading();
-    }
+    await super.downloadPDF(reportId);
   }
 }
 export class DashboardManager extends DashboardBase {
@@ -902,14 +936,6 @@ export class DashboardManager extends DashboardBase {
   }
 
   async downloadPDF(reportId) {
-    try {
-      this.showLoading("Preparing PDF...");
-      this.showMessage("PDF generation will be implemented in the next phase.", "info");
-    } catch (error) {
-      console.error("Error downloading PDF:", error);
-      this.showMessage("Failed to generate PDF: " + (error.message || error), "error");
-    } finally {
-      this.hideLoading();
-    }
+    await super.downloadPDF(reportId);
   }
 }

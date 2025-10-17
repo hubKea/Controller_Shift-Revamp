@@ -1,7 +1,10 @@
 module.exports = {
   testEnvironment: 'node',
   testTimeout: 30000,
-  testMatch: ['**/tests/**/*.test.js'],
+  transform: {
+    '^.+\\.js$': 'babel-jest'
+  },
+  testMatch: ['**/tests/**/*.test.js', '**/tests/**/*.test.mjs', '**/tests/**/*.test.cjs'],
   testPathIgnorePatterns: [
     '/node_modules/',
     // Temporarily disabled - requires fixes:

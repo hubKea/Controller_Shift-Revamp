@@ -21,8 +21,8 @@ describe('DataValidator', () => {
           canApprove: true,
           canViewAll: false,
           canManageUsers: false,
-          canCreateReports: true
-        }
+          canCreateReports: true,
+        },
       };
 
       expect(DataValidator.validateUser(user)).toBe(true);
@@ -33,10 +33,12 @@ describe('DataValidator', () => {
         uid: 'user-123',
         displayName: 'Controller Example',
         role: 'controller',
-        permissions: {}
+        permissions: {},
       };
 
-      expect(() => DataValidator.validateUser(incompleteUser)).toThrow('Missing required user fields');
+      expect(() => DataValidator.validateUser(incompleteUser)).toThrow(
+        'Missing required user fields'
+      );
     });
 
     test('throws when role is not recognised', () => {
@@ -45,7 +47,7 @@ describe('DataValidator', () => {
         email: 'controller@example.com',
         displayName: 'Someone',
         role: 'guest',
-        permissions: {}
+        permissions: {},
       };
 
       expect(() => DataValidator.validateUser(invalidRoleUser)).toThrow('Invalid user role');
@@ -56,7 +58,7 @@ describe('DataValidator', () => {
     test('returns true when minimum required fields are present', () => {
       const report = {
         createdBy: 'user-123',
-        status: 'draft'
+        status: 'draft',
       };
 
       expect(DataValidator.validateShiftReport(report)).toBe(true);
@@ -64,19 +66,23 @@ describe('DataValidator', () => {
 
     test('throws when required report fields are missing', () => {
       const incompleteReport = {
-        status: 'draft'
+        status: 'draft',
       };
 
-      expect(() => DataValidator.validateShiftReport(incompleteReport)).toThrow('Missing required report fields');
+      expect(() => DataValidator.validateShiftReport(incompleteReport)).toThrow(
+        'Missing required report fields'
+      );
     });
 
     test('throws when report status is invalid', () => {
       const invalidReport = {
         createdBy: 'user-123',
-        status: 'archived'
+        status: 'archived',
       };
 
-      expect(() => DataValidator.validateShiftReport(invalidReport)).toThrow('Invalid report status');
+      expect(() => DataValidator.validateShiftReport(invalidReport)).toThrow(
+        'Invalid report status'
+      );
     });
   });
 });
@@ -98,9 +104,26 @@ describe('DataTransformer.formToReport', () => {
       temperature: ' 20C ',
       visibility: ' High ',
       truckUpdates: ['  Checked pumps  '],
-      breakdowns: [{ truckRegNo: ' AB123 ', timeReported: ' 08:00 ', issue: ' Leak ', status: ' Fixed ' }],
-      phoneCalls: [{ driverTruckRegNo: ' TR-1 ', ruleViolated: ' Speeding ', timeOfCall: ' 10:00 ', summary: ' Reported by guard ' }],
-      investigations: [{ truckRegNo: ' TR2 ', issueIdentified: ' Delay ', timeLocation: ' 11:00 HQ ', findings: ' Inspect ', actionTaken: ' Notified ' }],
+      breakdowns: [
+        { truckRegNo: ' AB123 ', timeReported: ' 08:00 ', issue: ' Leak ', status: ' Fixed ' },
+      ],
+      phoneCalls: [
+        {
+          driverTruckRegNo: ' TR-1 ',
+          ruleViolated: ' Speeding ',
+          timeOfCall: ' 10:00 ',
+          summary: ' Reported by guard ',
+        },
+      ],
+      investigations: [
+        {
+          truckRegNo: ' TR2 ',
+          issueIdentified: ' Delay ',
+          timeLocation: ' 11:00 HQ ',
+          findings: ' Inspect ',
+          actionTaken: ' Notified ',
+        },
+      ],
       communicationLog: [{ time: ' 09:00 ', recipient: ' Manager ', subject: ' Update ' }],
       equipmentIssues: null,
       visitors: undefined,
@@ -115,7 +138,7 @@ describe('DataTransformer.formToReport', () => {
       totalLoads: ' 10 ',
       loadsDelivered: ' 8 ',
       pendingDeliveries: ' 2 ',
-      shiftPerformance: ' normal '
+      shiftPerformance: ' normal ',
     };
 
     const additionalFields = { customField: 'custom-value' };
@@ -126,7 +149,7 @@ describe('DataTransformer.formToReport', () => {
       updatedAt: now,
       submittedAt: now,
       submittedBy: 'user-123',
-      additionalFields
+      additionalFields,
     });
 
     expect(report.status).toBe('submitted');
@@ -140,7 +163,7 @@ describe('DataTransformer.formToReport', () => {
     expect(report.controller2).toBe('Bob');
     expect(report.personnelOnDuty).toEqual([
       { name: 'Alice', role: 'controller' },
-      { name: 'Bob', role: 'controller' }
+      { name: 'Bob', role: 'controller' },
     ]);
 
     expect(report.siteName).toBe('North Hub');
@@ -150,8 +173,8 @@ describe('DataTransformer.formToReport', () => {
       {
         type: 'truck_update',
         description: 'Checked pumps',
-        order: 1
-      }
+        order: 1,
+      },
     ]);
 
     expect(report.incidents).toEqual([
@@ -159,8 +182,8 @@ describe('DataTransformer.formToReport', () => {
         truckRegNo: 'AB123',
         timeReported: '08:00',
         issue: 'Leak',
-        status: 'Fixed'
-      }
+        status: 'Fixed',
+      },
     ]);
 
     expect(report.notifications).toEqual([
@@ -168,8 +191,8 @@ describe('DataTransformer.formToReport', () => {
         driverTruckRegNo: 'TR-1',
         ruleViolated: 'Speeding',
         timeOfCall: '10:00',
-        summary: 'Reported by guard'
-      }
+        summary: 'Reported by guard',
+      },
     ]);
 
     expect(report.maintenanceRequired).toEqual([
@@ -178,15 +201,15 @@ describe('DataTransformer.formToReport', () => {
         issueIdentified: 'Delay',
         timeLocation: '11:00 HQ',
         findings: 'Inspect',
-        actionTaken: 'Notified'
-      }
+        actionTaken: 'Notified',
+      },
     ]);
 
     expect(report.metrics).toEqual({
       totalTrucks: '5',
       totalLoads: '10',
       loadsDelivered: '8',
-      pendingDeliveries: '2'
+      pendingDeliveries: '2',
     });
 
     expect(report.reportSummary).toEqual({ shiftPerformance: 'normal' });

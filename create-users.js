@@ -4,106 +4,102 @@
 // User data for all team members
 const users = [
   {
-    email: "vincent@thinkersafrika.co.za",
-    password: "Vincent2024!", // Change this to a secure password
-    displayName: "Vincent Mogashoa",
-    role: "manager",
+    email: 'vincent@thinkersafrika.co.za',
+    password: 'Vincent2024!', // Change this to a secure password
+    displayName: 'Vincent Mogashoa',
+    role: 'manager',
     permissions: {
       canApprove: true,
       canViewAll: true,
-      canManageUsers: true
-    }
+      canManageUsers: true,
+    },
   },
   {
-    email: "keamogetswe@thinkersafrika.co.za",
-    password: "Kea2024!", // Change this to a secure password
-    displayName: "Kea Maripane",
-    role: "controller",
+    email: 'keamogetswe@thinkersafrika.co.za',
+    password: 'Kea2024!', // Change this to a secure password
+    displayName: 'Kea Maripane',
+    role: 'controller',
     permissions: {
       canApprove: true,
       canViewAll: false,
-      canManageUsers: false
-    }
+      canManageUsers: false,
+    },
   },
   {
-    email: "control@thinkersafrika.co.za",
-    password: "Sipho2024!", // Change this to a secure password
-    displayName: "Sipho Mahlinza",
-    role: "controller",
+    email: 'control@thinkersafrika.co.za',
+    password: 'Sipho2024!', // Change this to a secure password
+    displayName: 'Sipho Mahlinza',
+    role: 'controller',
     permissions: {
       canApprove: true,
       canViewAll: false,
-      canManageUsers: false
-    }
+      canManageUsers: false,
+    },
   },
   {
-    email: "john@thinkersafrika.co.za",
-    password: "John2024!", // Change this to a secure password
-    displayName: "John Macharaga",
-    role: "controller",
+    email: 'john@thinkersafrika.co.za',
+    password: 'John2024!', // Change this to a secure password
+    displayName: 'John Macharaga',
+    role: 'controller',
     permissions: {
       canApprove: true,
       canViewAll: false,
-      canManageUsers: false
-    }
+      canManageUsers: false,
+    },
   },
   {
-    email: "matshidiso@thinkersafrika.co.za",
-    password: "Matshidiso2024!", // Change this to a secure password
-    displayName: "Matshidiso Maake",
-    role: "controller",
+    email: 'matshidiso@thinkersafrika.co.za',
+    password: 'Matshidiso2024!', // Change this to a secure password
+    displayName: 'Matshidiso Maake',
+    role: 'controller',
     permissions: {
       canApprove: true,
       canViewAll: false,
-      canManageUsers: false
-    }
+      canManageUsers: false,
+    },
   },
   {
-    email: "gontle@thinkersafrika.co.za",
-    password: "Gontle2024!", // Change this to a secure password
-    displayName: "Gontle Ditibane",
-    role: "controller",
+    email: 'gontle@thinkersafrika.co.za',
+    password: 'Gontle2024!', // Change this to a secure password
+    displayName: 'Gontle Ditibane',
+    role: 'controller',
     permissions: {
       canApprove: true,
       canViewAll: false,
-      canManageUsers: false
-    }
+      canManageUsers: false,
+    },
   },
   {
-    email: "kabelo@thinkersafrika.co.za",
-    password: "Kabelo2024!", // Change this to a secure password
-    displayName: "Kabelo Tshabalala",
-    role: "controller",
+    email: 'kabelo@thinkersafrika.co.za',
+    password: 'Kabelo2024!', // Change this to a secure password
+    displayName: 'Kabelo Tshabalala',
+    role: 'controller',
     permissions: {
       canApprove: true,
       canViewAll: false,
-      canManageUsers: false
-    }
-  }
+      canManageUsers: false,
+    },
+  },
 ];
 
 // Function to create all users
 async function createAllUsers() {
-  console.log("Starting user creation process...");
-  
+  console.log('Starting user creation process...');
+
   for (const userData of users) {
     try {
       console.log(`Creating user: ${userData.displayName} (${userData.email})`);
-      
+
       // Import the user service (make sure it's loaded)
       const { userService } = await import('./js/user-service.js');
-      
-      const result = await userService.createUser(
-        userData.email,
-        userData.password,
-        {
-          displayName: userData.displayName,
-          role: userData.role,
-          assignedSites: [],
-          ...userData.permissions
-        }
-      );
-      
+
+      const result = await userService.createUser(userData.email, userData.password, {
+        displayName: userData.displayName,
+        role: userData.role,
+        assignedSites: [],
+        ...userData.permissions,
+      });
+
       if (result.success) {
         console.log(`✅ Successfully created user: ${userData.displayName}`);
       } else {
@@ -113,8 +109,8 @@ async function createAllUsers() {
       console.error(`❌ Error creating user ${userData.displayName}:`, error);
     }
   }
-  
-  console.log("User creation process completed!");
+
+  console.log('User creation process completed!');
 }
 
 // Instructions for running this script:
@@ -135,7 +131,7 @@ IMPORTANT:
 - This script will create all users in Firebase Authentication and Firestore
 
 Users to be created:
-${users.map(u => `- ${u.displayName} (${u.email}) - ${u.role}`).join('\n')}
+${users.map((u) => `- ${u.displayName} (${u.email}) - ${u.role}`).join('\n')}
 `);
 
 // Export the function for use

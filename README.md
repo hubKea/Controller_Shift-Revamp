@@ -191,6 +191,7 @@ pnpm lint:fix
 ```
 
 The `.eslintrc.cjs` config extends `eslint:recommended` and enables Prettier via `plugin:prettier/recommended`, while `.prettierrc` sets defaults such as `singleQuote`, `trailingComma: "es5"`, and `printWidth: 100`. Editors wired to ESLint/Prettier will now format files consistently with the CI pipeline.
+Legacy HTML screens and the current manager dashboard controller are temporarily excluded via `.eslintignore` until they are refactored to valid module-friendly markup.
 
 ## Deployment
 

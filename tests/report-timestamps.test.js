@@ -1,8 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const {
-  initializeTestEnvironment
-} = require('@firebase/rules-unit-testing');
+const { initializeTestEnvironment } = require('@firebase/rules-unit-testing');
 const {
   Timestamp,
   serverTimestamp,
@@ -15,7 +13,7 @@ const {
   query,
   orderBy,
   getDocs,
-  limit
+  limit,
 } = require('firebase/firestore');
 
 const { nowIso } = require('../js/utils.cjs');
@@ -29,8 +27,8 @@ describe('shiftReports timestamp lifecycle', () => {
     testEnv = await initializeTestEnvironment({
       projectId: 'controller-shift-revamp-tests',
       firestore: {
-        rules: fs.readFileSync(path.resolve(__dirname, '../firestore.rules'), 'utf8')
-      }
+        rules: fs.readFileSync(path.resolve(__dirname, '../firestore.rules'), 'utf8'),
+      },
     });
 
     await testEnv.withSecurityRulesDisabled(async (context) => {
@@ -43,16 +41,18 @@ describe('shiftReports timestamp lifecycle', () => {
         permissions: {
           canCreateReports: true,
           canViewAll: false,
-          canApprove: false
-        }
+          canApprove: false,
+        },
       });
     });
 
-    controllerDb = testEnv.authenticatedContext(controllerUid, {
-      token: {
-        email: 'controller@example.com'
-      }
-    }).firestore();
+    controllerDb = testEnv
+      .authenticatedContext(controllerUid, {
+        token: {
+          email: 'controller@example.com',
+        },
+      })
+      .firestore();
   });
 
   afterEach(async () => {
@@ -60,7 +60,7 @@ describe('shiftReports timestamp lifecycle', () => {
     await testEnv.withSecurityRulesDisabled(async (context) => {
       const adminDb = context.firestore();
       const reportsSnapshot = await getDocs(collection(adminDb, 'shiftReports'));
-      const deletePromises = reportsSnapshot.docs.map(docSnap => deleteDoc(docSnap.ref));
+      const deletePromises = reportsSnapshot.docs.map((docSnap) => deleteDoc(docSnap.ref));
       await Promise.all(deletePromises);
     });
   });
@@ -92,7 +92,7 @@ describe('shiftReports timestamp lifecycle', () => {
       createdAtClientIso: createdIso,
       updatedAt: updatedAtSentinel,
       updatedAtServer: updatedAtSentinel,
-      updatedAtClientIso: createdIso
+      updatedAtClientIso: createdIso,
     });
 
     const secondaryIso = nowIso();
@@ -111,7 +111,7 @@ describe('shiftReports timestamp lifecycle', () => {
       createdAtClientIso: secondaryIso,
       updatedAt: secondUpdatedSentinel,
       updatedAtServer: secondUpdatedSentinel,
-      updatedAtClientIso: secondaryIso
+      updatedAtClientIso: secondaryIso,
     });
 
     const createdSnap = await getDoc(reportRef);
@@ -132,7 +132,7 @@ describe('shiftReports timestamp lifecycle', () => {
       notes: 'Updated in emulator test',
       updatedAt: updateSentinel,
       updatedAtServer: updateSentinel,
-      updatedAtClientIso: updateIso
+      updatedAtClientIso: updateIso,
     });
 
     const updatedSnap = await getDoc(reportRef);

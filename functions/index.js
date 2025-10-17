@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 const crypto = require('crypto');
 const functions = require('firebase-functions/v1');
@@ -12,8 +12,11 @@ const db = admin.firestore();
 const FieldValue = admin.firestore.FieldValue;
 const Timestamp = admin.firestore.Timestamp;
 
-const APP_BASE_URL = (functions.config().app && functions.config().app.base_url) || 'https://thinkers-afrika-shift-reports.web.app';
-const APPROVAL_PAGE = (functions.config().app && functions.config().app.approval_url) || `${APP_BASE_URL}/approve.html`;
+const APP_BASE_URL =
+  (functions.config().app && functions.config().app.base_url) ||
+  'https://thinkers-afrika-shift-reports.web.app';
+const APPROVAL_PAGE =
+  (functions.config().app && functions.config().app.approval_url) || `${APP_BASE_URL}/approve.html`;
 const MAIL_COLLECTION = (functions.config().mail && functions.config().mail.collection) || 'mail';
 
 function normalizeStatus(status) {
@@ -137,7 +140,9 @@ function removeTokenFromAuxStructures(report, token) {
           const clone = { ...entry };
           if (clone.token === normalized) clone.token = null;
           if (Array.isArray(clone.tokens)) {
-            clone.tokens = clone.tokens.filter((value) => typeof value === 'string' && value.trim() !== normalized);
+            clone.tokens = clone.tokens.filter(
+              (value) => typeof value === 'string' && value.trim() !== normalized
+            );
           }
           if (Array.isArray(clone.links)) {
             clone.links = clone.links
@@ -162,7 +167,11 @@ function removeTokenFromAuxStructures(report, token) {
     updates.reviewerTokens = updated;
   }
 
-  if (report.reviewTokens && typeof report.reviewTokens === 'object' && !Array.isArray(report.reviewTokens)) {
+  if (
+    report.reviewTokens &&
+    typeof report.reviewTokens === 'object' &&
+    !Array.isArray(report.reviewTokens)
+  ) {
     const updatedMap = {};
     Object.entries(report.reviewTokens).forEach(([key, value]) => {
       if (typeof value === 'string') {
@@ -181,7 +190,11 @@ function removeTokenFromAuxStructures(report, token) {
     updates.reviewTokens = Object.keys(updatedMap).length ? updatedMap : FieldValue.delete();
   }
 
-  if (report.approvalTokens && typeof report.approvalTokens === 'object' && !Array.isArray(report.approvalTokens)) {
+  if (
+    report.approvalTokens &&
+    typeof report.approvalTokens === 'object' &&
+    !Array.isArray(report.approvalTokens)
+  ) {
     const updatedMap = {};
     Object.entries(report.approvalTokens).forEach(([key, value]) => {
       if (typeof value === 'string') {
@@ -249,7 +262,10 @@ function buildReviewEmailHtml(report, reviewerName, link) {
   const safeName = reviewerName || 'Team';
   const shiftDate = formatDateForEmail(report.shiftDate || report.reportDate);
   const siteName = report.siteName || 'the assigned site';
-  const controllers = (report.controllers && report.controllers.length) ? report.controllers.join(', ') : 'Shift Controller';
+  const controllers =
+    report.controllers && report.controllers.length
+      ? report.controllers.join(', ')
+      : 'Shift Controller';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -305,7 +321,10 @@ function buildReviewEmailText(report, reviewerName, link) {
   const safeName = reviewerName || 'Team';
   const shiftDate = formatDateForEmail(report.shiftDate || report.reportDate);
   const siteName = report.siteName || 'the assigned site';
-  const controllers = (report.controllers && report.controllers.length) ? report.controllers.join(', ') : 'Shift Controller';
+  const controllers =
+    report.controllers && report.controllers.length
+      ? report.controllers.join(', ')
+      : 'Shift Controller';
 
   return [
     `Hello ${safeName},`,
@@ -319,7 +338,7 @@ function buildReviewEmailText(report, reviewerName, link) {
     'If you have already completed this review, you can disregard this message.',
     '',
     'Thank you for your prompt attention.',
-    'Thinkers Afrika Control Room'
+    'Thinkers Afrika Control Room',
   ].join('\\n');
 }
 
@@ -350,7 +369,10 @@ async function getUserIdentityByUid(uid) {
     }
   } catch (error) {
     if (functions.logger) {
-      functions.logger.warn('Failed to read user profile document', { uid: normalized, error: error.message });
+      functions.logger.warn('Failed to read user profile document', {
+        uid: normalized,
+        error: error.message,
+      });
     }
   }
 
@@ -369,7 +391,10 @@ async function getUserIdentityByUid(uid) {
       }
     } catch (error) {
       if (functions.logger) {
-        functions.logger.warn('Auth record lookup failed while resolving user identity', { uid: normalized, error: error.message });
+        functions.logger.warn('Auth record lookup failed while resolving user identity', {
+          uid: normalized,
+          error: error.message,
+        });
       }
     }
   }
@@ -381,7 +406,7 @@ async function getUserIdentityByUid(uid) {
   const identity = {
     uid: normalized,
     email: email || null,
-    displayName
+    displayName,
   };
 
   userIdentityCache.set(normalized, identity);
@@ -411,14 +436,17 @@ async function getUserIdentityByEmail(email) {
     const fallback = {
       uid: userRecord.uid,
       email: normalized,
-      displayName: userRecord.displayName || normalized
+      displayName: userRecord.displayName || normalized,
     };
     userIdentityCache.set(userRecord.uid, fallback);
     emailIdentityCache.set(normalized, fallback);
     return fallback;
   } catch (error) {
     if (functions.logger) {
-      functions.logger.warn('Auth lookup by email failed while resolving identity', { email: normalized, error: error.message });
+      functions.logger.warn('Auth lookup by email failed while resolving identity', {
+        email: normalized,
+        error: error.message,
+      });
     }
   }
 
@@ -430,7 +458,10 @@ async function getUserIdentityByEmail(email) {
       const identity = {
         uid: doc.id,
         email: normalized,
-        displayName: (typeof data.displayName === 'string' && data.displayName.trim()) ? data.displayName.trim() : (data.email || normalized)
+        displayName:
+          typeof data.displayName === 'string' && data.displayName.trim()
+            ? data.displayName.trim()
+            : data.email || normalized,
       };
       userIdentityCache.set(identity.uid, identity);
       emailIdentityCache.set(normalized, identity);
@@ -438,7 +469,10 @@ async function getUserIdentityByEmail(email) {
     }
   } catch (error) {
     if (functions.logger) {
-      functions.logger.warn('Firestore lookup by email failed while resolving identity', { email: normalized, error: error.message });
+      functions.logger.warn('Firestore lookup by email failed while resolving identity', {
+        email: normalized,
+        error: error.message,
+      });
     }
   }
 
@@ -457,7 +491,7 @@ async function createInboxNotification(recipientUid, notification) {
   const payload = {
     ...notification,
     unread,
-    createdAt: FieldValue.serverTimestamp()
+    createdAt: FieldValue.serverTimestamp(),
   };
 
   return db.runTransaction(async (tx) => {
@@ -467,7 +501,7 @@ async function createInboxNotification(recipientUid, notification) {
     const parentUpdate = {
       updatedAt: parentUpdateTimestamp,
       updatedAtServer: parentUpdateTimestamp,
-      updatedAtClientIso: parentUpdateIso
+      updatedAtClientIso: parentUpdateIso,
     };
     if (unread) {
       parentUpdate.unreadCount = FieldValue.increment(1);
@@ -515,7 +549,9 @@ async function resolveReviewers(after) {
 
   const submitter =
     (typeof after.submittedBy === 'string' && after.submittedBy.trim()) ||
-    (after.controller1 && typeof after.controller1 === 'object' && typeof after.controller1.uid === 'string'
+    (after.controller1 &&
+    typeof after.controller1 === 'object' &&
+    typeof after.controller1.uid === 'string'
       ? after.controller1.uid.trim()
       : null);
 
@@ -565,11 +601,7 @@ exports.users = {
 
     const rawRoles = Array.isArray(data?.roles) ? data.roles : [];
     const normalizedRoles = Array.from(
-      new Set(
-        rawRoles
-          .map((role) => (typeof role === 'string' ? role.trim() : ''))
-          .filter(Boolean)
-      )
+      new Set(rawRoles.map((role) => (typeof role === 'string' ? role.trim() : '')).filter(Boolean))
     );
     const roles = normalizedRoles.length ? normalizedRoles : ['controller', 'manager'];
 
@@ -614,7 +646,7 @@ exports.users = {
           uid: docSnap.id,
           displayName,
           email,
-          role
+          role,
         });
         seen.add(docSnap.id);
 
@@ -625,7 +657,7 @@ exports.users = {
     }
 
     return { items };
-  })
+  }),
 };
 
 exports.sendReviewRequestEmail = functions.firestore
@@ -691,7 +723,7 @@ exports.sendReviewRequestEmail = functions.firestore
           approvalToken: token,
           approvedAt: null,
           rejectedAt: null,
-          rejectionComment: null
+          rejectionComment: null,
         };
 
         updatedReviewers[index] = normalizedReviewer;
@@ -705,8 +737,8 @@ exports.sendReviewRequestEmail = functions.firestore
             shiftDate: current.reportDate || current.shiftDate,
             shiftType: current.shiftType,
             siteName: current.siteName || current.startingDestination,
-            controllers: [current.controller1, current.controller2].filter(Boolean)
-          }
+            controllers: [current.controller1, current.controller2].filter(Boolean),
+          },
         });
       });
 
@@ -721,7 +753,7 @@ exports.sendReviewRequestEmail = functions.firestore
         reviewRequestedAt: nowTs,
         updatedAt: updateSentinel,
         updatedAtServer: updateSentinel,
-        updatedAtClientIso: updateIso
+        updatedAtClientIso: updateIso,
       });
     });
 
@@ -740,8 +772,8 @@ exports.sendReviewRequestEmail = functions.firestore
           message: {
             subject,
             html,
-            text
-          }
+            text,
+          },
         });
       })
     );
@@ -772,7 +804,9 @@ exports.onReportUnderReview = functions.firestore
 
     let actorId =
       (typeof after.submittedBy === 'string' && after.submittedBy.trim()) ||
-      (after.controller1 && typeof after.controller1 === 'object' && typeof after.controller1.uid === 'string'
+      (after.controller1 &&
+      typeof after.controller1 === 'object' &&
+      typeof after.controller1.uid === 'string'
         ? after.controller1.uid.trim()
         : '');
     actorId = actorId || 'system';
@@ -781,7 +815,10 @@ exports.onReportUnderReview = functions.firestore
     if (after.controller1 && typeof after.controller1 === 'object') {
       if (typeof after.controller1.name === 'string' && after.controller1.name.trim()) {
         actorName = after.controller1.name.trim();
-      } else if (typeof after.controller1.displayName === 'string' && after.controller1.displayName.trim()) {
+      } else if (
+        typeof after.controller1.displayName === 'string' &&
+        after.controller1.displayName.trim()
+      ) {
         actorName = after.controller1.displayName.trim();
       }
     } else if (typeof after.controller1 === 'string' && after.controller1.trim()) {
@@ -806,7 +843,7 @@ exports.onReportUnderReview = functions.firestore
       body: 'A shift report requires your approval.',
       unread: true,
       reportDate: after.reportDate || after.shiftDate || null,
-      siteName: after.siteName || after.startingDestination || null
+      siteName: after.siteName || after.startingDestination || null,
     };
 
     await Promise.all(
@@ -944,7 +981,7 @@ exports.onReportDecision = functions.firestore
           body,
           unread: true,
           reportDate: shiftDate || null,
-          siteName: siteName || null
+          siteName: siteName || null,
         });
       })
     );
@@ -966,24 +1003,39 @@ exports.reviewerApproveReport = functions.https.onCall(async (data) => {
     const report = snapshot.data();
     const currentStatus = normalizeStatus(report.status);
     if (['approved', 'rejected'].includes(currentStatus)) {
-      throw new functions.https.HttpsError('failed-precondition', `This report has already been ${currentStatus}.`);
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        `This report has already been ${currentStatus}.`
+      );
     }
 
     const match = findReviewerByToken(report, token);
     if (!match) {
-      throw new functions.https.HttpsError('permission-denied', 'The provided approval token is invalid or has expired.');
+      throw new functions.https.HttpsError(
+        'permission-denied',
+        'The provided approval token is invalid or has expired.'
+      );
     }
 
     const reviewerSnapshot = match.reviewer || {};
-    if (reviewerSnapshot.tokenUsed || ['approved', 'rejected'].includes(normalizeStatus(reviewerSnapshot.status))) {
-      throw new functions.https.HttpsError('failed-precondition', 'This approval token has already been used.');
+    if (
+      reviewerSnapshot.tokenUsed ||
+      ['approved', 'rejected'].includes(normalizeStatus(reviewerSnapshot.status))
+    ) {
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'This approval token has already been used.'
+      );
     }
 
     const reviewers = Array.isArray(report.reviewers)
       ? report.reviewers.map((reviewer) => (reviewer ? { ...reviewer } : reviewer))
       : [];
     if (!reviewers[match.index]) {
-      throw new functions.https.HttpsError('failed-precondition', 'Reviewer record could not be located.');
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'Reviewer record could not be located.'
+      );
     }
 
     const reviewerUpdate = invalidateReviewerTokens({ ...reviewers[match.index] }, nowTs);
@@ -1002,7 +1054,7 @@ exports.reviewerApproveReport = functions.https.onCall(async (data) => {
       reviewers,
       updatedAt: updateSentinel,
       updatedAtServer: updateSentinel,
-      updatedAtClientIso: updateIso
+      updatedAtClientIso: updateIso,
     };
 
     Object.assign(updates, removeTokenFromAuxStructures(report, token));
@@ -1038,27 +1090,42 @@ exports.reviewerRejectReport = functions.https.onCall(async (data) => {
     const report = snapshot.data();
     const currentStatus = normalizeStatus(report.status);
     if (currentStatus === 'approved') {
-      throw new functions.https.HttpsError('failed-precondition', 'Approved reports can no longer be rejected.');
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'Approved reports can no longer be rejected.'
+      );
     }
     if (currentStatus === 'rejected') {
-      throw new functions.https.HttpsError('failed-precondition', 'This report has already been rejected.');
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'This report has already been rejected.'
+      );
     }
 
     const match = findReviewerByToken(report, token);
     if (!match) {
-      throw new functions.https.HttpsError('permission-denied', 'The provided rejection token is invalid or has expired.');
+      throw new functions.https.HttpsError(
+        'permission-denied',
+        'The provided rejection token is invalid or has expired.'
+      );
     }
 
     const reviewerSnapshot = match.reviewer || {};
     if (reviewerSnapshot.tokenUsed) {
-      throw new functions.https.HttpsError('failed-precondition', 'This rejection token has already been used.');
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'This rejection token has already been used.'
+      );
     }
 
     const reviewers = Array.isArray(report.reviewers)
       ? report.reviewers.map((reviewer) => (reviewer ? { ...reviewer } : reviewer))
       : [];
     if (!reviewers[match.index]) {
-      throw new functions.https.HttpsError('failed-precondition', 'Reviewer record could not be located.');
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'Reviewer record could not be located.'
+      );
     }
 
     const updatedReviewers = reviewers.map((reviewer, index) => {
@@ -1097,7 +1164,7 @@ exports.reviewerRejectReport = functions.https.onCall(async (data) => {
       rejectedAtClientIso: updateIso,
       updatedAt: updateSentinel,
       updatedAtServer: updateSentinel,
-      updatedAtClientIso: updateIso
+      updatedAtClientIso: updateIso,
     };
 
     Object.assign(updates, clearAllTokens(report));

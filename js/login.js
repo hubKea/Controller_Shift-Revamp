@@ -1,12 +1,16 @@
 ﻿// Centralized Login Logic for Thinkers Afrika Shift Report System
 import { auth } from '../firebase-config.js';
-import { signInWithPopup, OAuthProvider, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+import {
+  signInWithPopup,
+  OAuthProvider,
+  onAuthStateChanged,
+} from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
 import { userService } from './user-service.js';
 
 // Microsoft OAuth Provider
 const microsoftProvider = new OAuthProvider('microsoft.com');
 microsoftProvider.setCustomParameters({
-  tenant: '9b0f483f-fde4-429e-bf68-b070e583e58e' // Your specific Microsoft 365 Tenant ID
+  tenant: '9b0f483f-fde4-429e-bf68-b070e583e58e', // Your specific Microsoft 365 Tenant ID
 });
 
 // Check for existing authentication on page load
@@ -14,16 +18,16 @@ let redirectInProgress = false;
 
 onAuthStateChanged(auth, async (user) => {
   console.log('🔍 onAuthStateChanged triggered on login page:', user ? user.email : 'null');
-  
+
   if (user && !redirectInProgress) {
     console.log('✅ User already authenticated:', user.email);
     redirectInProgress = true;
-    
+
     try {
       // Get user role and redirect
       const userRole = await userService.getUserRole(user.uid);
       console.log('👤 User role:', userRole);
-      
+
       if (userRole === 'manager') {
         console.log('🚀 Redirecting to manager dashboard...');
         window.location.href = 'dashboard-manager.html';
@@ -49,11 +53,10 @@ document.getElementById('microsoftSignIn').addEventListener('click', async () =>
     showLoading('Signing in with Microsoft 365...');
     const result = await signInWithPopup(auth, microsoftProvider);
     console.log('Microsoft sign-in successful:', result.user);
-    
+
     // Don't redirect here - let onAuthStateChanged handle it
     hideLoading();
     showSuccess('Signed in successfully! Redirecting...');
-    
   } catch (error) {
     console.error('Microsoft sign-in error:', error);
     hideLoading();
@@ -66,10 +69,11 @@ function showLoading(message) {
   const loadingEl = document.getElementById('loginMessage');
   if (loadingEl) {
     loadingEl.textContent = message;
-    loadingEl.className = 'p-4 rounded-xl text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200';
+    loadingEl.className =
+      'p-4 rounded-xl text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200';
     loadingEl.classList.remove('hidden');
   }
-  
+
   // Disable Microsoft sign-in button
   const microsoftBtn = document.getElementById('microsoftSignIn');
   if (microsoftBtn) {
@@ -84,7 +88,7 @@ function hideLoading() {
   if (loadingEl) {
     loadingEl.classList.add('hidden');
   }
-  
+
   // Re-enable Microsoft sign-in button
   const microsoftBtn = document.getElementById('microsoftSignIn');
   if (microsoftBtn) {
@@ -110,7 +114,7 @@ function showMessage(message, type) {
     const colors = {
       success: 'bg-green-100 text-green-800 border border-green-200',
       error: 'bg-red-100 text-red-800 border border-red-200',
-      info: 'bg-blue-100 text-blue-800 border border-blue-200'
+      info: 'bg-blue-100 text-blue-800 border border-blue-200',
     };
 
     messageEl.className = `p-4 rounded-xl text-sm font-medium ${colors[type] || colors.info}`;

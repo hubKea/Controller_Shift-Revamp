@@ -1,20 +1,16 @@
 // Centralized User Management Service
-import { 
-  signInWithEmailAndPassword, 
-  signOut, 
+import {
+  signInWithEmailAndPassword,
+  signOut,
   onAuthStateChanged,
   createUserWithEmailAndPassword,
-  updateProfile
+  updateProfile,
 } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-import { 
-  doc, 
-  setDoc, 
-  getDoc, 
-  updateDoc,
+import {
+  doc,
+  getDoc,
   collection,
-  query,
-  where,
-  getDocs
+  getDocs,
 } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 import { auth, db } from '../firebase-config.js';
 
@@ -35,23 +31,23 @@ class UserService {
         const userProfile = await this.getUserProfile(user.uid);
         this.userRole = userProfile.role;
         this.userPermissions = userProfile.permissions;
-        
+
         // Persist role in sessionStorage for role-aware navigation
         sessionStorage.setItem('userRole', this.userRole);
         sessionStorage.setItem('userUid', user.uid);
         sessionStorage.setItem('userEmail', user.email);
-        
+
         this.onAuthStateChange(user, this.userRole, this.userPermissions);
       } else {
         this.currentUser = null;
         this.userRole = null;
         this.userPermissions = null;
-        
+
         // Clear sessionStorage on logout
         sessionStorage.removeItem('userRole');
         sessionStorage.removeItem('userUid');
         sessionStorage.removeItem('userEmail');
-        
+
         this.onAuthStateChange(null, null, null);
       }
     });
@@ -109,7 +105,7 @@ class UserService {
     return {
       uid: sessionStorage.getItem('userUid'),
       email: sessionStorage.getItem('userEmail'),
-      role: sessionStorage.getItem('userRole')
+      role: sessionStorage.getItem('userRole'),
     };
   }
 
@@ -117,7 +113,7 @@ class UserService {
   async initializeAuthGuard() {
     return new Promise((resolve) => {
       console.log('🛡️ Authentication Guard: Starting...');
-      
+
       onAuthStateChanged(auth, async (user) => {
         try {
           if (!user) {
@@ -134,28 +130,32 @@ class UserService {
           }
 
           console.log('🛡️ Authentication Guard: User authenticated, fetching role...');
-          
+
           // Fetch user role from Firestore (blocking)
           const userProfile = await this.getUserProfile(user.uid);
           const userRole = userProfile.role;
-          
+
           console.log('🛡️ Authentication Guard: Role confirmed:', userRole);
-          
+
           // Store in sessionStorage for quick access
           sessionStorage.setItem('userRole', userRole);
           sessionStorage.setItem('userUid', user.uid);
           sessionStorage.setItem('userEmail', user.email);
-          
+
           // Conditional redirection based on role and current page
           const currentPage = window.location.pathname.split('/').pop() || 'index.html';
           console.log('🛡️ Authentication Guard: Current page:', currentPage);
-          
+
           let shouldRedirect = false;
           let redirectUrl = '';
-          
+
           if (userRole === 'manager') {
             // Manager should be on manager dashboard or report-form
-            if (currentPage !== 'dashboard-manager.html' && currentPage !== 'report-form.html' && currentPage !== 'approve.html') {
+            if (
+              currentPage !== 'dashboard-manager.html' &&
+              currentPage !== 'report-form.html' &&
+              currentPage !== 'approve.html'
+            ) {
               shouldRedirect = true;
               redirectUrl = 'dashboard-manager.html';
             }
@@ -166,27 +166,26 @@ class UserService {
               redirectUrl = 'dashboard-controller.html';
             }
           }
-          
+
           if (shouldRedirect) {
             console.log('🛡️ Authentication Guard: Redirecting to correct dashboard:', redirectUrl);
             window.location.href = redirectUrl;
             return;
           }
-          
+
           console.log('🛡️ Authentication Guard: User on correct page, proceeding...');
-          
+
           // Update current instance properties
           this.currentUser = user;
           this.userRole = userRole;
           this.userPermissions = userProfile.permissions;
-          
-          resolve({ 
-            authenticated: true, 
-            user: user, 
-            role: userRole, 
-            permissions: userProfile.permissions 
+
+          resolve({
+            authenticated: true,
+            user: user,
+            role: userRole,
+            permissions: userProfile.permissions,
           });
-          
         } catch (error) {
           console.error('🛡️ Authentication Guard: Error during role check:', error);
           // Fallback to controller role if error occurs
@@ -194,13 +193,13 @@ class UserService {
           sessionStorage.setItem('userRole', fallbackRole);
           sessionStorage.setItem('userUid', user.uid);
           sessionStorage.setItem('userEmail', user.email);
-          
-          resolve({ 
-            authenticated: true, 
-            user: user, 
-            role: fallbackRole, 
+
+          resolve({
+            authenticated: true,
+            user: user,
+            role: fallbackRole,
             permissions: this.getDefaultPermissions(fallbackRole),
-            error: error.message 
+            error: error.message,
           });
         }
       });
@@ -218,7 +217,7 @@ class UserService {
         role: 'controller',
         isActive: true,
         assignedSites: [],
-        permissions: this.getDefaultPermissions('controller')
+        permissions: this.getDefaultPermissions('controller'),
       };
     }
 
@@ -237,25 +236,25 @@ class UserService {
       role: role,
       isActive: true,
       assignedSites: [],
-      permissions: this.getDefaultPermissions(role)
+      permissions: this.getDefaultPermissions(role),
     };
   }
 
   // Get default permissions based on role
   getDefaultPermissions(role) {
     const permissions = {
-      'controller': {
+      controller: {
         canApprove: true, // Controllers can approve in this system
         canViewAll: false,
         canManageUsers: false,
-        canCreateReports: true
+        canCreateReports: true,
       },
-      'manager': {
+      manager: {
         canApprove: true,
         canViewAll: true,
         canManageUsers: true,
-        canCreateReports: true
-      }
+        canCreateReports: true,
+      },
     };
 
     return permissions[role] || permissions['controller'];
@@ -298,13 +297,15 @@ class UserService {
 
       // Update display name
       await updateProfile(user, {
-        displayName: userData.displayName
+        displayName: userData.displayName,
       });
 
       // NOTE: User document creation should be done server-side or by admin
       // Client-side writes are disabled for security
-      console.warn('⚠️ User created in Auth but profile must be created by admin in Firestore console');
-      
+      console.warn(
+        '⚠️ User created in Auth but profile must be created by admin in Firestore console'
+      );
+
       return { success: true, user: user };
     } catch (error) {
       console.error('Create user error:', error);
@@ -318,7 +319,7 @@ class UserService {
       const usersRef = collection(db, 'users');
       const snapshot = await getDocs(usersRef);
       const users = [];
-      snapshot.forEach(doc => {
+      snapshot.forEach((doc) => {
         users.push({ id: doc.id, ...doc.data() });
       });
       return { success: true, users: users };
@@ -329,7 +330,7 @@ class UserService {
   }
 
   // Update user role (manager function) - DISABLED CLIENT-SIDE WRITES
-  async updateUserRole(uid, newRole) {
+  async updateUserRole() {
     console.warn('⚠️ User role updates must be done by admin in Firestore console');
     return { success: false, error: 'Client-side user updates are disabled for security' };
   }
@@ -337,24 +338,24 @@ class UserService {
   // Check if user has permission
   hasPermission(permission) {
     if (!this.currentUser || !this.userRole) return false;
-    
+
     const permissions = {
-      'controller': {
+      controller: {
         canCreateReports: true,
         canViewOwnReports: true,
-        canEditOwnReports: true
+        canEditOwnReports: true,
       },
-      'reviewer': {
+      reviewer: {
         canApprove: true,
         canViewAssignedReports: true,
-        canViewOwnReports: true
+        canViewOwnReports: true,
       },
-      'manager': {
+      manager: {
         canViewAll: true,
         canApprove: true,
         canManageUsers: true,
-        canViewAllReports: true
-      }
+        canViewAllReports: true,
+      },
     };
 
     return permissions[this.userRole]?.[permission] || false;
@@ -365,7 +366,7 @@ class UserService {
     return {
       user: this.currentUser,
       role: this.userRole,
-      isAuthenticated: !!this.currentUser
+      isAuthenticated: !!this.currentUser,
     };
   }
 

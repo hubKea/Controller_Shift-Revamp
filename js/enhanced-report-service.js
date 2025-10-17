@@ -1,19 +1,18 @@
 // Enhanced Report Management Service with Complete Data Model
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  getDoc, 
-  getDocs, 
-  query, 
-  where, 
-  orderBy, 
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
   limit,
   serverTimestamp,
-  writeBatch,
-  onSnapshot
+  onSnapshot,
 } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 import { db } from '../firebase-config.js';
 import { userService } from './user-service.js';
@@ -26,7 +25,7 @@ function buildTimestampFields({ includeCreated = false, clientTimestampIso } = {
   const payload = {
     updatedAtServer: updatedServerValue,
     updatedAtClientIso: iso,
-    updatedAt: updatedServerValue
+    updatedAt: updatedServerValue,
   };
 
   if (includeCreated) {
@@ -91,10 +90,7 @@ class EnhancedReportService {
 
       DataValidator.validateShiftReport(reportData);
 
-      Object.assign(
-        reportData,
-        buildTimestampFields({ includeCreated: true, clientTimestampIso })
-      );
+      Object.assign(reportData, buildTimestampFields({ includeCreated: true, clientTimestampIso }));
 
       if (status === 'under_review') {
         reportData.submittedAt = serverTimestamp();
@@ -105,7 +101,12 @@ class EnhancedReportService {
       const docRef = await addDoc(collection(db, this.reportsCollection), reportData);
 
       console.log('Report created successfully:', docRef.id, 'at', clientTimestampIso);
-      return { success: true, reportId: docRef.id, savedAt: clientTimestampIso, data: { id: docRef.id, ...reportData } };
+      return {
+        success: true,
+        reportId: docRef.id,
+        savedAt: clientTimestampIso,
+        data: { id: docRef.id, ...reportData },
+      };
     } catch (error) {
       console.error('Create report error:', error);
       return { success: false, error: error.message };
@@ -134,7 +135,7 @@ class EnhancedReportService {
       // Transform form data to report structure
       const clientTimestampIso = options.clientTimestampIso || nowIso();
       const updateData = DataTransformer.formToReport(formData, currentUser.user.uid);
-      
+
       // Preserve critical fields that shouldn't be changed by client
       updateData.id = reportId;
       updateData.status = report.data.status;
@@ -145,7 +146,7 @@ class EnhancedReportService {
 
       // Update the report
       await updateDoc(doc(db, this.reportsCollection, reportId), updateData);
-      
+
       console.log('Report updated successfully:', reportId, 'at', clientTimestampIso);
       return { success: true, data: updateData, savedAt: clientTimestampIso };
     } catch (error) {
@@ -182,14 +183,14 @@ class EnhancedReportService {
         status: 'submitted',
         submittedAt: serverTimestamp(),
         submittedBy: currentUser.user.uid,
-        version: (report.data.version || 1) + 1
+        version: (report.data.version || 1) + 1,
       };
       updateData.submittedAtClientIso = clientTimestampIso;
       Object.assign(updateData, buildTimestampFields({ clientTimestampIso }));
       Object.assign(updateData, deriveCreatedAtFields(report.data));
 
       await updateDoc(doc(db, this.reportsCollection, reportId), updateData);
-      
+
       console.log('Report submitted successfully:', reportId, 'at', clientTimestampIso);
       return { success: true, savedAt: clientTimestampIso };
     } catch (error) {
@@ -207,7 +208,7 @@ class EnhancedReportService {
       }
 
       const reportData = { id: reportDoc.id, ...reportDoc.data() };
-      
+
       // Check if user can view this report
       const currentUser = userService.getCurrentUser();
       if (!this.canUserViewReport(reportData, currentUser.user.uid)) {
@@ -246,7 +247,7 @@ class EnhancedReportService {
 
       const snapshot = await getDocs(q);
       const reports = [];
-      snapshot.forEach(doc => {
+      snapshot.forEach((doc) => {
         reports.push({ id: doc.id, ...doc.data() });
       });
 
@@ -269,10 +270,7 @@ class EnhancedReportService {
         throw new Error('User does not have permission to view all reports');
       }
 
-      let q = query(
-        collection(db, this.reportsCollection),
-        orderBy('updatedAtServer', 'desc')
-      );
+      let q = query(collection(db, this.reportsCollection), orderBy('updatedAtServer', 'desc'));
 
       // Apply filters
       if (filters.status) {
@@ -289,7 +287,7 @@ class EnhancedReportService {
 
       const snapshot = await getDocs(q);
       const reports = [];
-      snapshot.forEach(doc => {
+      snapshot.forEach((doc) => {
         reports.push({ id: doc.id, ...doc.data() });
       });
 
@@ -324,7 +322,7 @@ class EnhancedReportService {
 
       const snapshot = await getDocs(q);
       const reports = [];
-      snapshot.forEach(doc => {
+      snapshot.forEach((doc) => {
         reports.push({ id: doc.id, ...doc.data() });
       });
 
@@ -362,12 +360,12 @@ class EnhancedReportService {
         approverName: currentUser.user.displayName || currentUser.user.email,
         action: 'approved',
         comment: comment,
-        timestamp: serverTimestamp()
+        timestamp: serverTimestamp(),
       };
 
       // Add approval to report
       const updatedApprovals = [...(report.data.approvals || []), approval];
-      
+
       // Update report status
       const clientTimestampIso = nowIso();
       const updateData = {
@@ -375,7 +373,7 @@ class EnhancedReportService {
         approvals: updatedApprovals,
         approvedAt: serverTimestamp(),
         approvedBy: currentUser.user.uid,
-        version: (report.data.version || 1) + 1
+        version: (report.data.version || 1) + 1,
       };
       updateData.approvedAtClientIso = clientTimestampIso;
       Object.assign(updateData, deriveCreatedAtFields(report.data));
@@ -425,19 +423,19 @@ class EnhancedReportService {
         approverName: currentUser.user.displayName || currentUser.user.email,
         action: 'rejected',
         comment: comment,
-        timestamp: serverTimestamp()
+        timestamp: serverTimestamp(),
       };
 
       // Add approval to report
       const updatedApprovals = [...(report.data.approvals || []), approval];
-      
+
       // Update report status
       const clientTimestampIso = nowIso();
       const updateData = {
         status: 'rejected',
         approvals: updatedApprovals,
         rejectionReason: comment,
-        version: (report.data.version || 1) + 1
+        version: (report.data.version || 1) + 1,
       };
       updateData.rejectedAt = serverTimestamp();
       updateData.rejectedAtClientIso = clientTimestampIso;
@@ -480,7 +478,7 @@ class EnhancedReportService {
       }
 
       await deleteDoc(doc(db, this.reportsCollection, reportId));
-      
+
       console.log('Report deleted successfully:', reportId);
       return { success: true };
     } catch (error) {
@@ -500,7 +498,7 @@ class EnhancedReportService {
         action: approval.action,
         comment: approval.comment,
         timestamp: approval.timestamp,
-        reportStatus: reportData.status
+        reportStatus: reportData.status,
       };
 
       await addDoc(collection(db, this.approvalsCollection), approvalDoc);
@@ -527,16 +525,20 @@ class EnhancedReportService {
       q = query(q, where('status', '==', filters.status));
     }
 
-    return onSnapshot(q, (snapshot) => {
-      const reports = [];
-      snapshot.forEach(doc => {
-        reports.push({ id: doc.id, ...doc.data() });
-      });
-      callback({ success: true, reports: reports });
-    }, (error) => {
-      console.error('Subscription error:', error);
-      callback({ success: false, error: error.message });
-    });
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const reports = [];
+        snapshot.forEach((doc) => {
+          reports.push({ id: doc.id, ...doc.data() });
+        });
+        callback({ success: true, reports: reports });
+      },
+      (error) => {
+        console.error('Subscription error:', error);
+        callback({ success: false, error: error.message });
+      }
+    );
   }
 
   // Helper method to check if user can edit a report
@@ -545,7 +547,7 @@ class EnhancedReportService {
     if (report.createdBy === userId && report.status === 'draft') {
       return true;
     }
-    
+
     // Managers can edit any draft report
     if (userService.hasPermission('canManageUsers') && report.status === 'draft') {
       return true;
@@ -560,12 +562,12 @@ class EnhancedReportService {
     if (report.createdBy === userId) {
       return true;
     }
-    
+
     // Managers can view all reports
     if (userService.hasPermission('canViewAll')) {
       return true;
     }
-    
+
     // Controllers can view submitted reports (they can review)
     if (userService.hasPermission('canApprove') && report.status === 'submitted') {
       return true;
@@ -587,18 +589,21 @@ class EnhancedReportService {
         draft: 0,
         submitted: 0,
         approved: 0,
-        rejected: 0
+        rejected: 0,
       };
 
       let q;
       if (userService.hasPermission('canViewAll')) {
         q = query(collection(db, this.reportsCollection));
       } else {
-        q = query(collection(db, this.reportsCollection), where('createdBy', '==', currentUser.user.uid));
+        q = query(
+          collection(db, this.reportsCollection),
+          where('createdBy', '==', currentUser.user.uid)
+        );
       }
 
       const snapshot = await getDocs(q);
-      snapshot.forEach(doc => {
+      snapshot.forEach((doc) => {
         const data = doc.data();
         stats.total++;
         stats[data.status] = (stats[data.status] || 0) + 1;
@@ -615,9 +620,3 @@ class EnhancedReportService {
 // Create and export singleton instance
 export const enhancedReportService = new EnhancedReportService();
 export default enhancedReportService;
-
-
-
-
-
-

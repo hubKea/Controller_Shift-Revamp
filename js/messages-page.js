@@ -3,15 +3,16 @@ import {
   subscribeUserConversations,
   subscribeConversationMessages,
   sendMessage,
-  markConversationRead
+  markConversationRead,
 } from './messages-service.js';
 
 const state = {
   currentUser: null,
   conversations: [],
   selectedConversationId: null,
+  pendingConversationId: null,
   unsubscribeConversations: null,
-  unsubscribeMessages: null
+  unsubscribeMessages: null,
 };
 
 const elements = {
@@ -23,8 +24,21 @@ const elements = {
   messageInput: document.getElementById('messageInput'),
   sendButton: document.getElementById('sendMessageButton'),
   chatTitle: document.getElementById('chatTitle'),
-  chatSubtitle: document.getElementById('chatSubtitle')
+  chatSubtitle: document.getElementById('chatSubtitle'),
 };
+
+const urlParams = new URLSearchParams(window.location.search);
+const initialConversationId = urlParams.get('conv')
+  ? urlParams.get('conv').trim()
+  : '';
+if (initialConversationId) {
+  state.pendingConversationId = initialConversationId;
+}
+
+if (state.pendingConversationId) {
+  elements.chatTitle.textContent = 'Loading conversationâ€¦';
+  elements.chatSubtitle.textContent = 'Fetching messages for this report.';
+}
 
 function formatTimestamp(timestamp) {
   if (!timestamp) return '';
@@ -41,7 +55,7 @@ function getConversationLabel(conversation) {
   if (!conversation) return 'Conversation';
   const { siteName, shiftDate, participants } = conversation;
   if (siteName && shiftDate) {
-    return `${siteName} • ${shiftDate}`;
+    return `${siteName} ï¿½ ${shiftDate}`;
   }
   if (siteName) return siteName;
   if (shiftDate) return shiftDate;
@@ -122,7 +136,8 @@ function renderMessages(messages) {
 
   if (!messages || !messages.length) {
     const emptyState = document.createElement('div');
-    emptyState.className = 'rounded-lg bg-white px-4 py-6 text-center text-sm text-neutral-500 shadow-sm';
+    emptyState.className =
+      'rounded-lg bg-white px-4 py-6 text-center text-sm text-neutral-500 shadow-sm';
     emptyState.textContent = 'No messages yet. Start the conversation below.';
     container.appendChild(emptyState);
     return;
@@ -141,8 +156,8 @@ function renderMessages(messages) {
       isSystem
         ? 'bg-neutral-200 text-neutral-600'
         : isCurrentUser
-        ? 'bg-blue-600 text-white'
-        : 'bg-white text-neutral-900'
+          ? 'bg-blue-600 text-white'
+          : 'bg-white text-neutral-900',
     ].join(' ');
 
     if (!isSystem) {
@@ -186,7 +201,7 @@ function updateChatHeader(conversation) {
       ? '1 participant'
       : `${conversation.participants.length} participants`
     : '';
-  const subtitle = [conversation.shiftDate, participantSummary].filter(Boolean).join(' • ');
+  const subtitle = [conversation.shiftDate, participantSummary].filter(Boolean).join(' ï¿½ ');
   elements.chatSubtitle.textContent = subtitle || 'Conversation details';
 }
 
@@ -229,8 +244,12 @@ function selectConversation(conversationId) {
 function handleConversationsUpdate(conversations) {
   const sorted = Array.isArray(conversations)
     ? [...conversations].sort((a, b) => {
-        const aTime = a?.lastMessageAt?.toMillis ? a.lastMessageAt.toMillis() : a?.lastMessageAt || 0;
-        const bTime = b?.lastMessageAt?.toMillis ? b.lastMessageAt.toMillis() : b?.lastMessageAt || 0;
+        const aTime = a?.lastMessageAt?.toMillis
+          ? a.lastMessageAt.toMillis()
+          : a?.lastMessageAt || 0;
+        const bTime = b?.lastMessageAt?.toMillis
+          ? b.lastMessageAt.toMillis()
+          : b?.lastMessageAt || 0;
         return bTime - aTime;
       })
     : [];
@@ -252,7 +271,17 @@ function handleConversationsUpdate(conversations) {
 
   renderConversations();
 
-  if (!state.selectedConversationId && sorted.length) {
+  if (state.pendingConversationId) {
+    const pendingExists = sorted.some((item) => item.id === state.pendingConversationId);
+    if (pendingExists) {
+      const pendingId = state.pendingConversationId;
+      state.pendingConversationId = null;
+      selectConversation(pendingId);
+      return;
+    }
+  }
+
+  if (!state.selectedConversationId && !state.pendingConversationId && sorted.length) {
     selectConversation(sorted[0].id);
   }
 }
@@ -271,13 +300,12 @@ function handleMessageFormSubmit(event) {
 
   elements.sendButton.disabled = true;
 
-  const senderName =
-    state.currentUser.displayName || state.currentUser.email || 'You';
+  const senderName = state.currentUser.displayName || state.currentUser.email || 'You';
 
   sendMessage(state.selectedConversationId, {
     content,
     senderId: state.currentUser.uid,
-    senderName
+    senderName,
   })
     .then(() => {
       elements.messageInput.value = '';
@@ -316,13 +344,15 @@ async function initializePage() {
   try {
     const authResult = await userService.initializeAuthGuard();
     if (!authResult.authenticated) {
-      elements.conversationsStatus.textContent = 'Redirecting to sign in…';
+      elements.conversationsStatus.textContent = 'Redirecting to sign inï¿½';
       return;
     }
 
     state.currentUser = authResult.user;
     initEventHandlers();
     updateSendButtonState();
+
+    elements.conversationsStatus.textContent = 'Loading conversationsâ€¦';
 
     state.unsubscribeConversations = subscribeUserConversations(authResult.user.uid, (items) => {
       handleConversationsUpdate(items);

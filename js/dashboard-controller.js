@@ -840,6 +840,32 @@ export class DashboardManager extends DashboardBase {
       </td>
     ;
 
+    const actionsContainer = row.querySelector('.flex.justify-end.gap-2');
+    if (actionsContainer) {
+      const chatLink = document.createElement('a');
+      chatLink.href = `messages.html?conv=${report.id}`;
+      chatLink.className =
+        'flex items-center justify-center gap-2 rounded-[12px] border border-blue-500 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2';
+      chatLink.setAttribute('data-action', 'chat');
+      chatLink.setAttribute('aria-label', 'Open chat for this report');
+
+      const chatIcon = document.createElement('span');
+      chatIcon.className = 'material-symbols-outlined text-base';
+      chatIcon.textContent = 'chat';
+
+      const chatLabel = document.createElement('span');
+      chatLabel.textContent = 'Open chat';
+
+      chatLink.append(chatIcon, chatLabel);
+
+      const downloadButton = actionsContainer.querySelector('[data-action="download"]');
+      if (downloadButton) {
+        actionsContainer.insertBefore(chatLink, downloadButton);
+      } else {
+        actionsContainer.appendChild(chatLink);
+      }
+    }
+
     const approveBtn = row.querySelector('[data-action="approve"]');
     if (approveBtn) {
       approveBtn.addEventListener("click", () => this.approveReport(report.id));

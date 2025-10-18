@@ -4,7 +4,7 @@
     "lint:fix": "eslint . --ext .js,.html --fix",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand tests/utils.test.cjs tests/pdf-service.test.mjs tests/messages-service.test.js",
     "test:unit": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand tests/utils.test.cjs tests/pdf-service.test.mjs tests/messages-service.test.js",
-    "test:integration": "firebase emulators:exec --only firestore -- node --experimental-vm-modules ./node_modules/jest/bin/jest.js tests/integration",
+    "test:integration": "firebase emulators:exec --project test-messages-triggers --only firestore \"node scripts/run-integration-tests.js\"",
     "test:all": "npm run test:unit && npm run test:integration",
     "test:watch": "jest --watch",
     "emulator:start": "firebase emulators:start --only firestore",

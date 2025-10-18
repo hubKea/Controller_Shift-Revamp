@@ -954,6 +954,19 @@
 
         const isReview = status === 'under_review';
 
+        if (
+          typeof data.controller1Id === 'string' &&
+          typeof data.controller2Id === 'string' &&
+          data.controller1Id &&
+          data.controller2Id &&
+          data.controller1Id.trim() &&
+          data.controller2Id.trim() &&
+          data.controller1Id.trim().toLowerCase() === data.controller2Id.trim().toLowerCase()
+        ) {
+          showMessage('The two on-duty controllers must be different people.', 'error');
+          return;
+        }
+
 
 
         if (isDraft) {

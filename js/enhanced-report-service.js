@@ -16,6 +16,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 import { db } from '../firebase-config.js';
 import { userService } from './user-service.js';
+import { ROLE_MANAGER } from './constants.js';
 import { DataModel, DataValidator, DataTransformer } from './data-model.js';
 import { nowIso } from './utils.js';
 
@@ -78,6 +79,17 @@ class EnhancedReportService {
       }
 
       const status = options.status || 'draft';
+      const controller1Value =
+        typeof formData?.controller1Id === 'string' ? formData.controller1Id.trim() : '';
+      const controller2Value =
+        typeof formData?.controller2Id === 'string' ? formData.controller2Id.trim() : '';
+      if (
+        controller1Value &&
+        controller2Value &&
+        controller1Value.toLowerCase() === controller2Value.toLowerCase()
+      ) {
+        throw new Error('Controller selections must be different individuals');
+      }
       const additionalFields = options.additionalFields ?? {};
       const clientTimestampIso = options.clientTimestampIso || nowIso();
 
@@ -119,6 +131,18 @@ class EnhancedReportService {
       const currentUser = userService.getCurrentUser();
       if (!currentUser.isAuthenticated) {
         throw new Error('User must be authenticated to update reports');
+      }
+
+      const controller1Value =
+        typeof formData?.controller1Id === 'string' ? formData.controller1Id.trim() : '';
+      const controller2Value =
+        typeof formData?.controller2Id === 'string' ? formData.controller2Id.trim() : '';
+      if (
+        controller1Value &&
+        controller2Value &&
+        controller1Value.toLowerCase() === controller2Value.toLowerCase()
+      ) {
+        throw new Error('Controller selections must be different individuals');
       }
 
       // Get existing report
@@ -199,6 +223,17 @@ class EnhancedReportService {
 
       if (report.data.status !== 'draft') {
         throw new Error('Only draft reports can be submitted');
+      }
+
+      if (
+        report.data.controller1Id &&
+        report.data.controller2Id &&
+        typeof report.data.controller1Id === 'string' &&
+        typeof report.data.controller2Id === 'string' &&
+        report.data.controller1Id.trim().toLowerCase() ===
+          report.data.controller2Id.trim().toLowerCase()
+      ) {
+        throw new Error('Reports must list two different on-duty controllers before submission');
       }
 
       // Update report status
@@ -334,9 +369,16 @@ class EnhancedReportService {
         throw new Error('User does not have permission to review reports');
       }
 
+      const constraints = [where('status', '==', 'submitted')];
+      const normalizedRole = (currentUser.role || '').toLowerCase();
+      const isManager = normalizedRole === ROLE_MANAGER.toLowerCase();
+      if (!isManager) {
+        constraints.push(where('controller2Id', '==', currentUser.user.uid));
+      }
+
       let q = query(
         collection(db, this.reportsCollection),
-        where('status', '==', 'submitted'),
+        ...constraints,
         orderBy('submittedAt', 'desc')
       );
 
@@ -347,7 +389,11 @@ class EnhancedReportService {
       const snapshot = await getDocs(q);
       const reports = [];
       snapshot.forEach((doc) => {
-        reports.push({ id: doc.id, ...doc.data() });
+        const data = { id: doc.id, ...doc.data() };
+        if (data.createdBy && data.createdBy === currentUser.user.uid && !isManager) {
+          return;
+        }
+        reports.push(data);
       });
 
       return { success: true, reports: reports };
@@ -376,6 +422,12 @@ class EnhancedReportService {
 
       if (report.data.status !== 'submitted') {
         throw new Error('Only submitted reports can be approved');
+      }
+
+      const normalizedRole = (currentUser.role || '').toLowerCase();
+      const isManager = normalizedRole === ROLE_MANAGER.toLowerCase();
+      if (report.data.createdBy && report.data.createdBy === currentUser.user.uid && !isManager) {
+        throw new Error('You cannot approve your own report');
       }
 
       // Create approval record
@@ -439,6 +491,12 @@ class EnhancedReportService {
 
       if (report.data.status !== 'submitted') {
         throw new Error('Only submitted reports can be rejected');
+      }
+
+      const normalizedRole = (currentUser.role || '').toLowerCase();
+      const isManager = normalizedRole === ROLE_MANAGER.toLowerCase();
+      if (report.data.createdBy && report.data.createdBy === currentUser.user.uid && !isManager) {
+        throw new Error('You cannot reject your own report');
       }
 
       // Create rejection record

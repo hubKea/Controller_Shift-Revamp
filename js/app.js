@@ -469,12 +469,14 @@ class App {
   // Get action buttons based on user type and report status
   getActionButtons(report, userType) {
     let buttons = '';
+    const isReportAuthor =
+      report?.createdBy && this.currentUser && report.createdBy === this.currentUser.uid;
 
     if (userType === ROLE_MANAGER) {
       if (report.status === 'draft') {
         buttons += `<button class="edit-report-btn px-3 py-1 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600" data-report-id="${report.id}">Edit</button>`;
       }
-      if (report.status === 'submitted') {
+      if (report.status === 'submitted' && !isReportAuthor) {
         buttons += `<button class="approve-report-btn px-3 py-1 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600" data-report-id="${report.id}">Approve</button>`;
         buttons += `<button class="reject-report-btn px-3 py-1 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600" data-report-id="${report.id}">Reject</button>`;
       }
@@ -483,7 +485,7 @@ class App {
         buttons += `<button class="edit-report-btn px-3 py-1 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600" data-report-id="${report.id}">Edit</button>`;
         buttons += `<button class="submit-report-btn px-3 py-1 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600" data-report-id="${report.id}">Submit</button>`;
       }
-      if (report.status === 'submitted' && this.userPermissions?.canApprove) {
+      if (report.status === 'submitted' && this.userPermissions?.canApprove && !isReportAuthor) {
         buttons += `<button class="approve-report-btn px-3 py-1 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600" data-report-id="${report.id}">Approve</button>`;
         buttons += `<button class="reject-report-btn px-3 py-1 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600" data-report-id="${report.id}">Reject</button>`;
       }

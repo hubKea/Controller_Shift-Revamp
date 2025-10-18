@@ -140,6 +140,17 @@ export const DataValidator = {
       throw new Error('Invalid report status');
     }
 
+    if (
+      typeof reportData.controller1Id === 'string' &&
+      typeof reportData.controller2Id === 'string' &&
+      reportData.controller1Id.trim() &&
+      reportData.controller2Id.trim() &&
+      reportData.controller1Id.trim().toLowerCase() ===
+        reportData.controller2Id.trim().toLowerCase()
+    ) {
+      throw new Error('Controller assignments must reference two different people');
+    }
+
     return true;
   },
 

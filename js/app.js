@@ -1,10 +1,16 @@
 // Main Application Script - Thinkers Afrika Shift Report System
 // Handles authentication, role management, and application initialization
 
-import '../firebase-config.js';
+import { db } from '../firebase-config.js';
 import { userService } from './user-service.js';
 import { enhancedReportService } from './enhanced-report-service.js';
 import { ROLE_CONTROLLER, ROLE_MANAGER } from './constants.js';
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+} from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
 class App {
   constructor() {
@@ -12,6 +18,7 @@ class App {
     this.userRole = null;
     this.userPermissions = null;
     this.isInitialized = false;
+    this.reportFormControllersLoaded = false;
 
     // Initialize the application
     this.init();
@@ -177,8 +184,122 @@ class App {
 
   // Handle report form logic
   handleReportForm() {
-    console.log('ðŸ“ Report form loaded');
+    console.log('[ReportForm] Page loaded');
+    this.populateReportFormControllers();
     this.loadUserReports();
+  }
+
+  async populateReportFormControllers() {
+    if (this.reportFormControllersLoaded) {
+      return;
+    }
+
+    const controllerSelects = ['controller1', 'controller2']
+      .map((id) => document.getElementById(id))
+      .filter((select) => select instanceof HTMLSelectElement);
+
+    if (controllerSelects.length === 0) {
+      return;
+    }
+
+    try {
+      const usersRef = collection(db, 'users');
+      const snapshot = await getDocs(
+        query(usersRef, where('role', 'in', [ROLE_CONTROLLER, ROLE_MANAGER]))
+      );
+      const optionMap = new Map();
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data() || {};
+        if (data.isActive === false) {
+          return;
+        }
+
+        const email = typeof data.email === 'string' ? data.email.trim() : '';
+        if (!email) {
+          return;
+        }
+        const label = (typeof data.displayName === 'string' && data.displayName.trim()) || email;
+        const key = email.toLowerCase();
+
+        if (!optionMap.has(key)) {
+          optionMap.set(key, { value: email, label });
+        }
+      });
+
+      const options = Array.from(optionMap.values()).sort((a, b) =>
+        a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
+      );
+
+      if (options.length === 0) {
+        console.warn(
+          '[ReportForm] No active controllers found in Firestore; retaining fallback options.'
+        );
+        return;
+      }
+
+      controllerSelects.forEach((select) => {
+        const previousValue = typeof select.value === 'string' ? select.value : '';
+        const preferredUid = select.dataset?.preferredUid || '';
+        const preferredEmail = select.dataset?.preferredEmail || '';
+        const preferredLabel = select.dataset?.preferredLabel || '';
+
+        select.innerHTML = '';
+
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Select Controller';
+        select.appendChild(placeholder);
+
+        options.forEach(({ value, label }) => {
+          const option = document.createElement('option');
+          option.value = value;
+          option.textContent = label;
+          option.dataset.email = value;
+          select.appendChild(option);
+        });
+
+        const trySetValue = (value) => {
+          if (!value) {
+            return false;
+          }
+          select.value = value;
+          return select.value === value;
+        };
+
+        if (trySetValue(previousValue)) {
+          return;
+        }
+
+        if (trySetValue(preferredUid)) {
+          return;
+        }
+
+        if (preferredEmail) {
+          const matchByEmail = options.find(
+            (option) => option.value.toLowerCase() === preferredEmail.toLowerCase()
+          );
+          if (matchByEmail && trySetValue(matchByEmail.value)) {
+            return;
+          }
+        }
+
+        if (preferredLabel) {
+          const matchByLabel = options.find(
+            (option) => option.label.toLowerCase() === preferredLabel.toLowerCase()
+          );
+          if (matchByLabel && trySetValue(matchByLabel.value)) {
+            return;
+          }
+        }
+
+        select.value = '';
+      });
+
+      this.reportFormControllersLoaded = true;
+    } catch (error) {
+      console.error('[ReportForm] Error populating controller selects:', error);
+    }
   }
 
   // Handle approval page logic

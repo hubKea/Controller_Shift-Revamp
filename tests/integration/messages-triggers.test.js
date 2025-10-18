@@ -19,12 +19,17 @@ const {
 
 // Test environment variables
 const PROJECT_ID = 'test-messages-triggers';
-const EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8080';
+const EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8081';
 
 describe('Messages Integration Tests', () => {
   let testEnv;
   let db;
-  let adminDb;
+
+  const runWithAdmin = async (callback) => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await callback(context.firestore());
+    });
+  };
 
   beforeAll(async () => {
     // Initialize test environment
@@ -44,7 +49,6 @@ describe('Messages Integration Tests', () => {
     db = authenticatedContext.firestore();
 
     // Get admin context for setup
-    adminDb = testEnv.unauthenticatedContext().firestore();
   });
 
   afterEach(async () => {
@@ -60,17 +64,19 @@ describe('Messages Integration Tests', () => {
   describe('Message Creation Triggers', () => {
     it('should increment unreadCount for non-sender and update lastMessageAt', async () => {
       // Setup: Create a conversation with two participants
-      const conversationRef = doc(adminDb, 'conversations', 'test-conv-1');
-      await setDoc(conversationRef, {
-        participants: ['test-user-1', 'test-user-2'],
-        reportId: 'test-report-1',
-        createdAt: Timestamp.now(),
-        lastMessageAt: null,
-        lastMessagePreview: '',
-        unreadCount: {
-          'test-user-1': 0,
-          'test-user-2': 0,
-        },
+      const conversationRef = doc(db, 'conversations', 'test-conv-1');
+      await runWithAdmin(async (adminDb) => {
+        await setDoc(doc(adminDb, 'conversations', 'test-conv-1'), {
+          participants: ['test-user-1', 'test-user-2'],
+          reportId: 'test-report-1',
+          createdAt: Timestamp.now(),
+          lastMessageAt: null,
+          lastMessagePreview: '',
+          unreadCount: {
+            'test-user-1': 0,
+            'test-user-2': 0,
+          },
+        });
       });
 
       // Act: User 1 sends a message
@@ -103,26 +109,27 @@ describe('Messages Integration Tests', () => {
 
     it('should not increment unreadCount for system messages', async () => {
       // Setup: Create a conversation
-      const conversationRef = doc(adminDb, 'conversations', 'test-conv-2');
-      await setDoc(conversationRef, {
-        participants: ['test-user-1', 'test-user-2'],
-        reportId: 'test-report-2',
-        createdAt: Timestamp.now(),
-        unreadCount: {
-          'test-user-1': 0,
-          'test-user-2': 0,
-        },
+      const conversationRef = doc(db, 'conversations', 'test-conv-2');
+      await runWithAdmin(async (adminDb) => {
+        await setDoc(doc(adminDb, 'conversations', 'test-conv-2'), {
+          participants: ['test-user-1', 'test-user-2'],
+          reportId: 'test-report-2',
+          createdAt: Timestamp.now(),
+          unreadCount: {
+            'test-user-1': 0,
+            'test-user-2': 0,
+          },
+        });
       });
 
       // Act: Add a system message
-      const systemMessage = {
-        content: 'Report was submitted for review',
-        timestamp: serverTimestamp(),
-        system: true,
-      };
-
-      const messagesRef = collection(conversationRef, 'messages');
-      await addDoc(messagesRef, systemMessage);
+      await runWithAdmin(async (adminDb) => {
+        await addDoc(collection(doc(adminDb, 'conversations', 'test-conv-2'), 'messages'), {
+          content: 'Report was submitted for review',
+          timestamp: serverTimestamp(),
+          system: true,
+        });
+      });
 
       // Wait for trigger
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -139,34 +146,36 @@ describe('Messages Integration Tests', () => {
   describe('Report Status Change Triggers', () => {
     it('should create conversation and system message on report submission', async () => {
       // Setup: Create a report in draft status
-      const reportRef = doc(adminDb, 'shiftReports', 'test-report-3');
-      await setDoc(reportRef, {
-        status: 'draft',
-        siteName: 'Test Site',
-        reportDate: '2024-01-15',
-        controller1: { uid: 'test-user-1', name: 'Controller 1' },
-        controller2: { uid: 'test-user-2', name: 'Controller 2' },
-        reviewers: [{ uid: 'manager-1', name: 'Manager 1' }],
+      await runWithAdmin(async (adminDb) => {
+        const reportRef = doc(adminDb, 'shiftReports', 'test-report-3');
+        await setDoc(reportRef, {
+          status: 'draft',
+          siteName: 'Test Site',
+          reportDate: '2024-01-15',
+          controller1: { uid: 'test-user-1', name: 'Controller 1' },
+          controller2: { uid: 'test-user-2', name: 'Controller 2' },
+          reviewers: [{ uid: 'manager-1', name: 'Manager 1' }],
+        });
+
+        // Act: Update status to under_review
+        await updateDoc(reportRef, {
+          status: 'under_review',
+          submittedAt: serverTimestamp(),
+        });
+
+        // Wait for trigger
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        // Assert: Check if conversation was created
+        const conversationsQuery = query(
+          collection(adminDb, 'conversations'),
+          where('reportId', '==', 'test-report-3')
+        );
+        const convSnapshot = await getDocs(conversationsQuery);
+
+        // In a real trigger test, this would be created by the Cloud Function
+        expect(convSnapshot.empty).toBe(true); // Currently no trigger implementation
       });
-
-      // Act: Update status to under_review
-      await updateDoc(reportRef, {
-        status: 'under_review',
-        submittedAt: serverTimestamp(),
-      });
-
-      // Wait for trigger
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Assert: Check if conversation was created
-      const conversationsQuery = query(
-        collection(adminDb, 'conversations'),
-        where('reportId', '==', 'test-report-3')
-      );
-      const convSnapshot = await getDocs(conversationsQuery);
-
-      // In a real trigger test, this would be created by the Cloud Function
-      expect(convSnapshot.empty).toBe(true); // Currently no trigger implementation
 
       // Expected behavior when trigger is implemented:
       // expect(convSnapshot.size).toBe(1);
@@ -185,48 +194,50 @@ describe('Messages Integration Tests', () => {
 
     it('should add system message on approval/rejection', async () => {
       // Setup: Create a report under review with existing conversation
-      const reportRef = doc(adminDb, 'shiftReports', 'test-report-4');
-      await setDoc(reportRef, {
-        status: 'under_review',
-        siteName: 'Test Site',
-        reportDate: '2024-01-16',
-        controller1: { uid: 'test-user-1', name: 'Controller 1' },
-        reviewers: [{ uid: 'manager-1', name: 'Manager 1' }],
-      });
+      await runWithAdmin(async (adminDb) => {
+        const reportRef = doc(adminDb, 'shiftReports', 'test-report-4');
+        await setDoc(reportRef, {
+          status: 'under_review',
+          siteName: 'Test Site',
+          reportDate: '2024-01-16',
+          controller1: { uid: 'test-user-1', name: 'Controller 1' },
+          reviewers: [{ uid: 'manager-1', name: 'Manager 1' }],
+        });
 
-      const conversationRef = doc(adminDb, 'conversations', 'test-conv-4');
-      await setDoc(conversationRef, {
-        reportId: 'test-report-4',
-        participants: ['test-user-1', 'manager-1'],
-        createdAt: Timestamp.now(),
-        unreadCount: {
-          'test-user-1': 0,
-          'manager-1': 0,
-        },
-      });
-
-      // Act: Approve the report
-      await updateDoc(reportRef, {
-        status: 'approved',
-        approvals: [
-          {
-            action: 'approved',
-            timestamp: serverTimestamp(),
-            userId: 'manager-1',
-            userName: 'Manager 1',
-            comments: 'Looks good!',
+        const conversationRef = doc(adminDb, 'conversations', 'test-conv-4');
+        await setDoc(conversationRef, {
+          reportId: 'test-report-4',
+          participants: ['test-user-1', 'manager-1'],
+          createdAt: Timestamp.now(),
+          unreadCount: {
+            'test-user-1': 0,
+            'manager-1': 0,
           },
-        ],
+        });
+
+        // Act: Approve the report
+        await updateDoc(reportRef, {
+          status: 'approved',
+          approvals: [
+            {
+              action: 'approved',
+              timestamp: Timestamp.now(),
+              userId: 'manager-1',
+              userName: 'Manager 1',
+              comments: 'Looks good!',
+            },
+          ],
+        });
+
+        // Wait for trigger
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        // Assert: Check for approval system message
+        const messagesSnapshot = await getDocs(collection(conversationRef, 'messages'));
+
+        // In a real trigger test, this message would be created by the Cloud Function
+        expect(messagesSnapshot.empty).toBe(true); // Currently no trigger implementation
       });
-
-      // Wait for trigger
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Assert: Check for approval system message
-      const messagesSnapshot = await getDocs(collection(conversationRef, 'messages'));
-
-      // In a real trigger test, this message would be created by the Cloud Function
-      expect(messagesSnapshot.empty).toBe(true); // Currently no trigger implementation
 
       // Expected behavior when trigger is implemented:
       // expect(messagesSnapshot.size).toBeGreaterThan(0);
@@ -241,10 +252,11 @@ describe('Messages Integration Tests', () => {
   describe('Security Rules', () => {
     it('should allow users to read conversations they are participants in', async () => {
       // Setup: Create a conversation
-      const conversationRef = doc(adminDb, 'conversations', 'test-conv-5');
-      await setDoc(conversationRef, {
-        participants: ['test-user-1', 'test-user-2'],
-        reportId: 'test-report-5',
+      await runWithAdmin(async (adminDb) => {
+        await setDoc(doc(adminDb, 'conversations', 'test-conv-5'), {
+          participants: ['test-user-1', 'test-user-2'],
+          reportId: 'test-report-5',
+        });
       });
 
       // Assert: User 1 can read
@@ -258,10 +270,11 @@ describe('Messages Integration Tests', () => {
 
     it('should allow participants to send messages', async () => {
       // Setup: Create a conversation
-      const conversationRef = doc(adminDb, 'conversations', 'test-conv-6');
-      await setDoc(conversationRef, {
-        participants: ['test-user-1', 'test-user-2'],
-        reportId: 'test-report-6',
+      await runWithAdmin(async (adminDb) => {
+        await setDoc(doc(adminDb, 'conversations', 'test-conv-6'), {
+          participants: ['test-user-1', 'test-user-2'],
+          reportId: 'test-report-6',
+        });
       });
 
       // Assert: Participant can add message
@@ -280,10 +293,11 @@ describe('Messages Integration Tests', () => {
 
     it('should prevent non-participants from sending messages', async () => {
       // Setup: Create a conversation without test-user-3
-      const conversationRef = doc(adminDb, 'conversations', 'test-conv-7');
-      await setDoc(conversationRef, {
-        participants: ['test-user-1', 'test-user-2'],
-        reportId: 'test-report-7',
+      await runWithAdmin(async (adminDb) => {
+        await setDoc(doc(adminDb, 'conversations', 'test-conv-7'), {
+          participants: ['test-user-1', 'test-user-2'],
+          reportId: 'test-report-7',
+        });
       });
 
       // Assert: Non-participant cannot add message
@@ -304,3 +318,4 @@ describe('Messages Integration Tests', () => {
     });
   });
 });
+

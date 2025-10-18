@@ -103,7 +103,7 @@ jobs:
       - name: Run integration tests with emulator
         run: pnpm test:integration
         env:
-          FIRESTORE_EMULATOR_HOST: localhost:8080
+          FIRESTORE_EMULATOR_HOST: localhost:8081
 
   build:
     runs-on: ubuntu-latest

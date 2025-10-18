@@ -152,15 +152,49 @@ Controller_Shift-Revamp/
 
 ## Running Tests
 
-The project provides emulator-backed tests that validate timestamp behaviour and callable APIs. Tests rely on the Firestore emulator, so ensure the Firebase CLI is installed.
+The project provides both unit tests and integration tests. Unit tests mock Firebase services and can run without any external dependencies, while integration tests use the Firebase emulator suite.
+
+### Unit Tests
+
+Run unit tests without needing Java or Firebase emulators:
 
 ```bash
 pnpm test
+# or explicitly:
+pnpm test:unit
 ```
 
-Behind the scenes this calls the Firebase Emulator suite and runs Jest in-band so tests run against a clean Firestore instance. Use this before sending pull requests to catch regressions in timestamp logic or notification functions.
+Unit tests include:
+- `messages-service.test.js` - Tests message service functions with mocked Firestore
+- `utils.test.cjs` - Utility function tests
+- `pdf-service.test.mjs` - PDF generation tests
 
-Run the lightweight typecheck placeholder to ensure the repository’s TypeScript gate (currently a no-op) passes CI hooks:
+### Integration Tests
+
+Integration tests require **Java 11 or higher** for the Firebase emulator. These tests validate Cloud Functions triggers, security rules, and real Firestore operations.
+
+```bash
+# Ensure Java 11+ is installed
+java -version
+
+# Run integration tests
+pnpm test:integration
+```
+
+Integration tests include:
+- `messages-triggers.test.js` - Tests for conversation creation, message triggers, and security rules
+
+### Running All Tests
+
+To run both unit and integration tests:
+
+```bash
+pnpm test:all
+```
+
+### Type Checking
+
+Run the lightweight typecheck placeholder to ensure the repository's TypeScript gate passes CI hooks:
 
 ```bash
 pnpm typecheck
@@ -175,6 +209,13 @@ pnpm typecheck
   ```bash
   firebase emulators:start --only firestore
   ```
+
+### CI/CD Integration
+
+The GitHub Actions workflow runs unit tests automatically on every push and pull request. Integration tests are:
+- Run automatically on pushes to the `main` branch
+- Available as a manual workflow dispatch option
+- Skipped on pull requests to speed up CI (unless manually triggered)
 
 ## Linting and Formatting
 

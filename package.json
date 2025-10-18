@@ -2,12 +2,14 @@
   "scripts": {
     "lint": "eslint . --ext .js,.html",
     "lint:fix": "eslint . --ext .js,.html --fix",
-    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand tests/utils.test.cjs tests/pdf-service.test.mjs",
-    "test:all": "jest --runInBand",
-    "test:emu": "firebase emulators:exec --only firestore \"npx jest --runInBand\"",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand tests/utils.test.cjs tests/pdf-service.test.mjs tests/messages-service.test.js",
+    "test:unit": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand tests/utils.test.cjs tests/pdf-service.test.mjs tests/messages-service.test.js",
+    "test:integration": "firebase emulators:exec --only firestore -- node --experimental-vm-modules ./node_modules/jest/bin/jest.js tests/integration",
+    "test:all": "npm run test:unit && npm run test:integration",
     "test:watch": "jest --watch",
     "emulator:start": "firebase emulators:start --only firestore",
-    "typecheck": "node scripts/typecheck.js"
+    "typecheck": "node scripts/typecheck.js",
+    "build": "npm run typecheck && npm run test"
   },
   "dependencies": {
     "firebase-admin": "^13.5.0",

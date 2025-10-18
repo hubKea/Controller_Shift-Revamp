@@ -1,6 +1,7 @@
 // Firestore Data Model and Schema Definitions
 // This file defines the complete data structure for the Thinkers Afrika Shift Report system
 
+import { ROLE_CONTROLLER, ROLE_MANAGER, ROLE_REVIEWER } from './constants.js';
 export const DataModel = {
   // User Collection Schema
   users: {
@@ -117,7 +118,7 @@ export const DataValidator = {
       throw new Error(`Missing required user fields: ${missing.join(', ')}`);
     }
 
-    if (!['manager', 'controller', 'reviewer'].includes(userData.role)) {
+    if (![ROLE_MANAGER, ROLE_CONTROLLER, ROLE_REVIEWER].includes(userData.role)) {
       throw new Error('Invalid user role');
     }
 
@@ -223,8 +224,8 @@ export const DataTransformer = {
     const controller2Name = pickValue(formData.controller2);
 
     const personnelOnDuty = [
-      controller1Name ? { name: controller1Name, role: 'controller' } : null,
-      controller2Name ? { name: controller2Name, role: 'controller' } : null,
+      controller1Name ? { name: controller1Name, role: ROLE_CONTROLLER } : null,
+      controller2Name ? { name: controller2Name, role: ROLE_CONTROLLER } : null,
     ].filter(Boolean);
 
     const reportDate = pickValue(formData.reportDate, formData.shiftDate);

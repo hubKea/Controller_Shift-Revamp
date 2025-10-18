@@ -3,6 +3,7 @@ import { db } from "../firebase-config.js";
 import { userService } from "./user-service.js";
 import { enhancedReportService } from "./enhanced-report-service.js";
 import { generatePdf } from "./pdf-service.js";
+import { ROLE_CONTROLLER, ROLE_MANAGER } from "./constants.js";
 import {
   collection,
   query,
@@ -518,7 +519,7 @@ export class DashboardBase {
 }
 export class DashboardController extends DashboardBase {
   constructor(options = {}) {
-    super({ ...options, searchInputSelector: null, requiredRole: "controller" });
+    super({ ...options, searchInputSelector: null, requiredRole: ROLE_CONTROLLER });
     this.initialSnapshotState = { controller1: false, controller2: false };
   }
 
@@ -667,7 +668,7 @@ export class DashboardController extends DashboardBase {
 }
 export class DashboardManager extends DashboardBase {
   constructor(options = {}) {
-    super({ ...options, requiredRole: "manager" });
+    super({ ...options, requiredRole: ROLE_MANAGER });
     this.onFiltersChanged = (filters) => this.refreshReports(filters);
     this.lastFetchSignature = null;
     this.controllerOptionsLoaded = false;
@@ -684,7 +685,9 @@ export class DashboardManager extends DashboardBase {
 
     try {
       const usersRef = collection(db, "users");
-      const snapshot = await getDocs(query(usersRef, where("role", "in", ["controller", "manager"])));
+      const snapshot = await getDocs(
+        query(usersRef, where("role", "in", [ROLE_CONTROLLER, ROLE_MANAGER]))
+      );
       const controllers = new Set();
       snapshot.forEach((docSnap) => {
         const data = docSnap.data() || {};

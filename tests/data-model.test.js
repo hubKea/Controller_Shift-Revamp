@@ -2,11 +2,16 @@ const { describe, expect, test, beforeAll } = require('@jest/globals');
 
 let DataValidator;
 let DataTransformer;
+let ROLE_CONTROLLER;
 
 beforeAll(async () => {
-  const module = await import('../js/data-model.js');
-  DataValidator = module.DataValidator;
-  DataTransformer = module.DataTransformer;
+  const [modelModule, rolesModule] = await Promise.all([
+    import('../js/data-model.js'),
+    import('../js/constants.js'),
+  ]);
+  DataValidator = modelModule.DataValidator;
+  DataTransformer = modelModule.DataTransformer;
+  ({ ROLE_CONTROLLER } = rolesModule);
 });
 
 describe('DataValidator', () => {
@@ -16,7 +21,7 @@ describe('DataValidator', () => {
         uid: 'user-123',
         email: 'controller@example.com',
         displayName: 'Controller Example',
-        role: 'controller',
+        role: ROLE_CONTROLLER,
         permissions: {
           canApprove: true,
           canViewAll: false,
@@ -32,7 +37,7 @@ describe('DataValidator', () => {
       const incompleteUser = {
         uid: 'user-123',
         displayName: 'Controller Example',
-        role: 'controller',
+        role: ROLE_CONTROLLER,
         permissions: {},
       };
 
@@ -162,8 +167,8 @@ describe('DataTransformer.formToReport', () => {
     expect(report.controller1).toBe('Alice');
     expect(report.controller2).toBe('Bob');
     expect(report.personnelOnDuty).toEqual([
-      { name: 'Alice', role: 'controller' },
-      { name: 'Bob', role: 'controller' },
+      { name: 'Alice', role: ROLE_CONTROLLER },
+      { name: 'Bob', role: ROLE_CONTROLLER },
     ]);
 
     expect(report.siteName).toBe('North Hub');

@@ -4,6 +4,8 @@ const crypto = require('crypto');
 const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
 
+const roleConstantsPromise = import('./role-constants.mjs');
+
 if (!admin.apps.length) {
   admin.initializeApp();
 }
@@ -634,11 +636,13 @@ exports.users = {
       throw new functions.https.HttpsError('unauthenticated', 'Sign in required.');
     }
 
+    const { ROLE_CONTROLLER, ROLE_MANAGER } = await roleConstantsPromise;
+
     const rawRoles = Array.isArray(data?.roles) ? data.roles : [];
     const normalizedRoles = Array.from(
       new Set(rawRoles.map((role) => (typeof role === 'string' ? role.trim() : '')).filter(Boolean))
     );
-    const roles = normalizedRoles.length ? normalizedRoles : ['controller', 'manager'];
+    const roles = normalizedRoles.length ? normalizedRoles : [ROLE_CONTROLLER, ROLE_MANAGER];
 
     const MAX_IN_CLAUSE = 10;
     const MAX_RESULTS = 200;
@@ -675,7 +679,7 @@ exports.users = {
           (typeof record.email === 'string' && record.email.trim()) ||
           'User';
         const email = typeof record.email === 'string' ? record.email.trim() : '';
-        const role = typeof record.role === 'string' ? record.role : 'controller';
+        const role = typeof record.role === 'string' ? record.role : ROLE_CONTROLLER;
 
         items.push({
           uid: docSnap.id,
@@ -1080,7 +1084,7 @@ exports.onReportDecision = functions.firestore
         participantUids
       );
 
-      const decisionEmoji = afterStatus === 'approved' ? '✅' : '❌';
+      const decisionEmoji = afterStatus === 'approved' ? 'âœ…' : 'âŒ';
       let decisionText =
         afterStatus === 'approved'
           ? `${decisionEmoji} ${actorName} approved the shift report.`

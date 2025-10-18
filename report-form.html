@@ -372,6 +372,7 @@
     <script type="module">
       import { userService } from "./js/user-service.js";
       import { subscribeUserConversations } from "./js/messages-service.js";
+      import { ROLE_CONTROLLER, ROLE_MANAGER } from "./js/constants.js";
 
       const messagesButton = document.getElementById("messagesButton");
       const unreadBadge = document.getElementById("messagesUnreadBadge");
@@ -458,6 +459,7 @@
     import { enhancedReportService } from './js/enhanced-report-service.js';
     import { nowIso } from './js/utils.js'; // Timestamp utility for client-side ISO strings
     import { generatePdf } from './js/pdf-service.js';
+    import { ROLE_REVIEWER } from './js/constants.js';
     
     // Verify nowIso is loaded
     console.log('✅ nowIso function loaded:', typeof nowIso === 'function');
@@ -801,13 +803,14 @@
 
     // Authentication and form handling
     let currentUser = null;
-    let currentUserRole = 'controller';
+    let currentUserRole = ROLE_CONTROLLER;
     let roleResolved = false;
     let pendingDashboardRedirect = false;
     const dashboardLinks = document.querySelectorAll('[data-dashboard-link]');
     const backToDashboardLink = document.getElementById('backToDashboardLink');
 
-    const getDashboardUrl = () => currentUserRole === 'manager' ? 'dashboard-manager.html' : 'dashboard-controller.html';
+    const getDashboardUrl = () =>
+      currentUserRole === ROLE_MANAGER ? 'dashboard-manager.html' : 'dashboard-controller.html';
 
     function updateDashboardLinks() {
       const destination = getDashboardUrl();
@@ -987,7 +990,7 @@
 
 
 
-          const collectReviewer = (select, { required = false, role = 'reviewer' } = {}) => {
+          const collectReviewer = (select, { required = false, role = ROLE_REVIEWER } = {}) => {
 
             if (!select) return;
 

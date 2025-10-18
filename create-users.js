@@ -1,120 +1,123 @@
 // Script to create all Thinkers Afrika users
 // Run this in the browser console after Firebase is set up
 
-// User data for all team members
-const users = [
-  {
-    email: 'vincent@thinkersafrika.co.za',
-    password: 'Vincent2024!', // Change this to a secure password
-    displayName: 'Vincent Mogashoa',
-    role: 'manager',
-    permissions: {
-      canApprove: true,
-      canViewAll: true,
-      canManageUsers: true,
-    },
-  },
-  {
-    email: 'keamogetswe@thinkersafrika.co.za',
-    password: 'Kea2024!', // Change this to a secure password
-    displayName: 'Kea Maripane',
-    role: 'controller',
-    permissions: {
-      canApprove: true,
-      canViewAll: false,
-      canManageUsers: false,
-    },
-  },
-  {
-    email: 'control@thinkersafrika.co.za',
-    password: 'Sipho2024!', // Change this to a secure password
-    displayName: 'Sipho Mahlinza',
-    role: 'controller',
-    permissions: {
-      canApprove: true,
-      canViewAll: false,
-      canManageUsers: false,
-    },
-  },
-  {
-    email: 'john@thinkersafrika.co.za',
-    password: 'John2024!', // Change this to a secure password
-    displayName: 'John Macharaga',
-    role: 'controller',
-    permissions: {
-      canApprove: true,
-      canViewAll: false,
-      canManageUsers: false,
-    },
-  },
-  {
-    email: 'matshidiso@thinkersafrika.co.za',
-    password: 'Matshidiso2024!', // Change this to a secure password
-    displayName: 'Matshidiso Maake',
-    role: 'controller',
-    permissions: {
-      canApprove: true,
-      canViewAll: false,
-      canManageUsers: false,
-    },
-  },
-  {
-    email: 'gontle@thinkersafrika.co.za',
-    password: 'Gontle2024!', // Change this to a secure password
-    displayName: 'Gontle Ditibane',
-    role: 'controller',
-    permissions: {
-      canApprove: true,
-      canViewAll: false,
-      canManageUsers: false,
-    },
-  },
-  {
-    email: 'kabelo@thinkersafrika.co.za',
-    password: 'Kabelo2024!', // Change this to a secure password
-    displayName: 'Kabelo Tshabalala',
-    role: 'controller',
-    permissions: {
-      canApprove: true,
-      canViewAll: false,
-      canManageUsers: false,
-    },
-  },
-];
+(async () => {
+  const { ROLE_CONTROLLER, ROLE_MANAGER } = await import('./js/constants.js');
 
-// Function to create all users
-async function createAllUsers() {
-  console.log('Starting user creation process...');
+  // User data for all team members
+  const users = [
+    {
+      email: 'vincent@thinkersafrika.co.za',
+      password: 'Vincent2024!', // Change this to a secure password
+      displayName: 'Vincent Mogashoa',
+      role: ROLE_MANAGER,
+      permissions: {
+        canApprove: true,
+        canViewAll: true,
+        canManageUsers: true,
+      },
+    },
+    {
+      email: 'keamogetswe@thinkersafrika.co.za',
+      password: 'Kea2024!', // Change this to a secure password
+      displayName: 'Kea Maripane',
+      role: ROLE_CONTROLLER,
+      permissions: {
+        canApprove: true,
+        canViewAll: false,
+        canManageUsers: false,
+      },
+    },
+    {
+      email: 'control@thinkersafrika.co.za',
+      password: 'Sipho2024!', // Change this to a secure password
+      displayName: 'Sipho Mahlinza',
+      role: ROLE_CONTROLLER,
+      permissions: {
+        canApprove: true,
+        canViewAll: false,
+        canManageUsers: false,
+      },
+    },
+    {
+      email: 'john@thinkersafrika.co.za',
+      password: 'John2024!', // Change this to a secure password
+      displayName: 'John Macharaga',
+      role: ROLE_CONTROLLER,
+      permissions: {
+        canApprove: true,
+        canViewAll: false,
+        canManageUsers: false,
+      },
+    },
+    {
+      email: 'matshidiso@thinkersafrika.co.za',
+      password: 'Matshidiso2024!', // Change this to a secure password
+      displayName: 'Matshidiso Maake',
+      role: ROLE_CONTROLLER,
+      permissions: {
+        canApprove: true,
+        canViewAll: false,
+        canManageUsers: false,
+      },
+    },
+    {
+      email: 'gontle@thinkersafrika.co.za',
+      password: 'Gontle2024!', // Change this to a secure password
+      displayName: 'Gontle Ditibane',
+      role: ROLE_CONTROLLER,
+      permissions: {
+        canApprove: true,
+        canViewAll: false,
+        canManageUsers: false,
+      },
+    },
+    {
+      email: 'kabelo@thinkersafrika.co.za',
+      password: 'Kabelo2024!', // Change this to a secure password
+      displayName: 'Kabelo Tshabalala',
+      role: ROLE_CONTROLLER,
+      permissions: {
+        canApprove: true,
+        canViewAll: false,
+        canManageUsers: false,
+      },
+    },
+  ];
 
-  for (const userData of users) {
-    try {
-      console.log(`Creating user: ${userData.displayName} (${userData.email})`);
+  // Function to create all users
+  async function createAllUsers() {
+    console.log('Starting user creation process...');
 
-      // Import the user service (make sure it's loaded)
-      const { userService } = await import('./js/user-service.js');
+    for (const userData of users) {
+      try {
+        console.log(`Creating user: ${userData.displayName} (${userData.email})`);
 
-      const result = await userService.createUser(userData.email, userData.password, {
-        displayName: userData.displayName,
-        role: userData.role,
-        assignedSites: [],
-        ...userData.permissions,
-      });
+        // Import the user service (make sure it's loaded)
+        const { userService } = await import('./js/user-service.js');
 
-      if (result.success) {
-        console.log(`✅ Successfully created user: ${userData.displayName}`);
-      } else {
-        console.error(`❌ Failed to create user ${userData.displayName}:`, result.error);
+        const result = await userService.createUser(userData.email, userData.password, {
+          displayName: userData.displayName,
+          role: userData.role,
+          assignedSites: [],
+          ...userData.permissions,
+        });
+
+        if (result.success) {
+          console.log(`✅ Successfully created user: ${userData.displayName}`);
+        } else {
+          console.error(`❌ Failed to create user ${userData.displayName}:`, result.error);
+        }
+      } catch (error) {
+        console.error(`❌ Error creating user ${userData.displayName}:`, error);
       }
-    } catch (error) {
-      console.error(`❌ Error creating user ${userData.displayName}:`, error);
     }
+
+    console.log('User creation process completed!');
   }
 
-  console.log('User creation process completed!');
-}
-
-// Instructions for running this script:
-console.log(`
+  // Instructions for running this script:
+  console.log(`
 === Thinkers Afrika User Creation Script ===
 
 To create all users:
@@ -134,5 +137,6 @@ Users to be created:
 ${users.map((u) => `- ${u.displayName} (${u.email}) - ${u.role}`).join('\n')}
 `);
 
-// Export the function for use
-window.createAllUsers = createAllUsers;
+  // Export the function for use
+  window.createAllUsers = createAllUsers;
+})();

@@ -13,6 +13,7 @@ import {
   getDocs,
 } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 import { auth, db } from '../firebase-config.js';
+import { ROLE_CONTROLLER, ROLE_MANAGER, ROLE_REVIEWER } from './constants.js';
 
 class UserService {
   constructor() {
@@ -59,15 +60,17 @@ class UserService {
       const userDoc = await getDoc(doc(db, 'users', uid));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        console.log('✅ User profile found:', userData.email, 'Role:', userData.role);
+        console.log('[UserService] User profile found:', userData.email, 'Role:', userData.role);
         return userData;
       } else {
-        console.warn('⚠️ User profile not found in Firestore, returning default profile');
+        console.warn(
+          '[UserService] User profile not found in Firestore, returning default profile'
+        );
         // Return default profile without creating in database
         return this.getDefaultUserProfile(uid);
       }
     } catch (error) {
-      console.error('❌ Error loading user profile:', error);
+      console.error('[UserService] Error loading user profile:', error);
       // Return default profile on error
       return this.getDefaultUserProfile(uid);
     }
@@ -79,8 +82,8 @@ class UserService {
       const userProfile = await this.getUserProfile(uid);
       return userProfile.role;
     } catch (error) {
-      console.error('❌ Error getting user role:', error);
-      return 'controller'; // Default fallback
+      console.error('[UserService] Error getting user role:', error);
+      return ROLE_CONTROLLER; // Default fallback
     }
   }
 
@@ -90,8 +93,8 @@ class UserService {
       const userProfile = await this.getUserProfile(uid);
       return userProfile.permissions;
     } catch (error) {
-      console.error('❌ Error getting user permissions:', error);
-      return this.getDefaultPermissions('controller');
+      console.error('[UserService] Error getting user permissions:', error);
+      return this.getDefaultPermissions(ROLE_CONTROLLER);
     }
   }
 
@@ -112,16 +115,16 @@ class UserService {
   // Central Authentication Guard - Blocking role check with conditional redirection
   async initializeAuthGuard() {
     return new Promise((resolve) => {
-      console.log('🛡️ Authentication Guard: Starting...');
+      console.log('[AuthGuard] Starting...');
 
       onAuthStateChanged(auth, async (user) => {
         try {
           if (!user) {
-            console.log('🛡️ Authentication Guard: No user authenticated');
+            console.log('[AuthGuard] No user authenticated');
             // User not authenticated - redirect to login if not already there
             const currentPage = window.location.pathname.split('/').pop() || 'index.html';
             if (currentPage !== 'index.html') {
-              console.log('🛡️ Authentication Guard: Redirecting to login...');
+              console.log('[AuthGuard] Redirecting to login...');
               window.location.href = 'index.html';
               return;
             }
@@ -129,13 +132,13 @@ class UserService {
             return;
           }
 
-          console.log('🛡️ Authentication Guard: User authenticated, fetching role...');
+          console.log('[AuthGuard] User authenticated, fetching role...');
 
           // Fetch user role from Firestore (blocking)
           const userProfile = await this.getUserProfile(user.uid);
           const userRole = userProfile.role;
 
-          console.log('🛡️ Authentication Guard: Role confirmed:', userRole);
+          console.log('[AuthGuard] Role confirmed:', userRole);
 
           // Store in sessionStorage for quick access
           sessionStorage.setItem('userRole', userRole);
@@ -144,12 +147,12 @@ class UserService {
 
           // Conditional redirection based on role and current page
           const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-          console.log('🛡️ Authentication Guard: Current page:', currentPage);
+          console.log('[AuthGuard] Current page:', currentPage);
 
           let shouldRedirect = false;
           let redirectUrl = '';
 
-          if (userRole === 'manager') {
+          if (userRole === ROLE_MANAGER) {
             // Manager should be on manager dashboard or report-form
             if (
               currentPage !== 'dashboard-manager.html' &&
@@ -159,7 +162,7 @@ class UserService {
               shouldRedirect = true;
               redirectUrl = 'dashboard-manager.html';
             }
-          } else if (userRole === 'controller') {
+          } else if (userRole === ROLE_CONTROLLER) {
             // Controller should be on controller dashboard or report-form
             if (currentPage !== 'dashboard-controller.html' && currentPage !== 'report-form.html') {
               shouldRedirect = true;
@@ -168,12 +171,12 @@ class UserService {
           }
 
           if (shouldRedirect) {
-            console.log('🛡️ Authentication Guard: Redirecting to correct dashboard:', redirectUrl);
+            console.log('[AuthGuard] Redirecting to correct dashboard:', redirectUrl);
             window.location.href = redirectUrl;
             return;
           }
 
-          console.log('🛡️ Authentication Guard: User on correct page, proceeding...');
+          console.log('[AuthGuard] User on correct page, proceeding...');
 
           // Update current instance properties
           this.currentUser = user;
@@ -187,9 +190,9 @@ class UserService {
             permissions: userProfile.permissions,
           });
         } catch (error) {
-          console.error('🛡️ Authentication Guard: Error during role check:', error);
+          console.error('[AuthGuard] Error during role check:', error);
           // Fallback to controller role if error occurs
-          const fallbackRole = 'controller';
+          const fallbackRole = ROLE_CONTROLLER;
           sessionStorage.setItem('userRole', fallbackRole);
           sessionStorage.setItem('userUid', user.uid);
           sessionStorage.setItem('userEmail', user.email);
@@ -214,19 +217,19 @@ class UserService {
         uid: uid,
         email: 'unknown@example.com',
         displayName: 'Unknown User',
-        role: 'controller',
+        role: ROLE_CONTROLLER,
         isActive: true,
         assignedSites: [],
-        permissions: this.getDefaultPermissions('controller'),
+        permissions: this.getDefaultPermissions(ROLE_CONTROLLER),
       };
     }
 
     const email = user.email;
-    let role = 'controller'; // Default role
+    let role = ROLE_CONTROLLER; // Default role
 
     // Check if user is manager based on email
     if (email === 'vincent@thinkersafrika.co.za') {
-      role = 'manager';
+      role = ROLE_MANAGER;
     }
 
     return {
@@ -242,22 +245,27 @@ class UserService {
 
   // Get default permissions based on role
   getDefaultPermissions(role) {
-    const permissions = {
-      controller: {
+    const permissionsByRole = {
+      [ROLE_CONTROLLER]: {
         canApprove: true, // Controllers can approve in this system
         canViewAll: false,
         canManageUsers: false,
         canCreateReports: true,
       },
-      manager: {
+      [ROLE_MANAGER]: {
         canApprove: true,
         canViewAll: true,
         canManageUsers: true,
         canCreateReports: true,
       },
+      [ROLE_REVIEWER]: {
+        canApprove: true,
+        canViewAssignedReports: true,
+        canViewOwnReports: true,
+      },
     };
 
-    return permissions[role] || permissions['controller'];
+    return permissionsByRole[role] || permissionsByRole[ROLE_CONTROLLER];
   }
 
   // Sign in with email and password
@@ -303,7 +311,7 @@ class UserService {
       // NOTE: User document creation should be done server-side or by admin
       // Client-side writes are disabled for security
       console.warn(
-        '⚠️ User created in Auth but profile must be created by admin in Firestore console'
+        'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â User created in Auth but profile must be created by admin in Firestore console'
       );
 
       return { success: true, user: user };
@@ -331,7 +339,7 @@ class UserService {
 
   // Update user role (manager function) - DISABLED CLIENT-SIDE WRITES
   async updateUserRole() {
-    console.warn('⚠️ User role updates must be done by admin in Firestore console');
+    console.warn('[UserService] User role updates must be done by admin in Firestore console');
     return { success: false, error: 'Client-side user updates are disabled for security' };
   }
 
@@ -339,18 +347,18 @@ class UserService {
   hasPermission(permission) {
     if (!this.currentUser || !this.userRole) return false;
 
-    const permissions = {
-      controller: {
+    const permissionsByRole = {
+      [ROLE_CONTROLLER]: {
         canCreateReports: true,
         canViewOwnReports: true,
         canEditOwnReports: true,
       },
-      reviewer: {
+      [ROLE_REVIEWER]: {
         canApprove: true,
         canViewAssignedReports: true,
         canViewOwnReports: true,
       },
-      manager: {
+      [ROLE_MANAGER]: {
         canViewAll: true,
         canApprove: true,
         canManageUsers: true,
@@ -358,7 +366,7 @@ class UserService {
       },
     };
 
-    return permissions[this.userRole]?.[permission] || false;
+    return permissionsByRole[this.userRole]?.[permission] || false;
   }
 
   // Get current user info

@@ -1,4 +1,4 @@
-﻿// Centralized Login Logic for Thinkers Afrika Shift Report System
+// Centralized Login Logic for Thinkers Afrika Shift Report System
 import { auth } from '../firebase-config.js';
 import {
   signInWithPopup,
@@ -6,6 +6,7 @@ import {
   onAuthStateChanged,
 } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
 import { userService } from './user-service.js';
+import { ROLE_MANAGER } from './constants.js';
 
 // Microsoft OAuth Provider
 const microsoftProvider = new OAuthProvider('microsoft.com');
@@ -28,7 +29,7 @@ onAuthStateChanged(auth, async (user) => {
       const userRole = await userService.getUserRole(user.uid);
       console.log('👤 User role:', userRole);
 
-      if (userRole === 'manager') {
+      if (userRole === ROLE_MANAGER) {
         console.log('🚀 Redirecting to manager dashboard...');
         window.location.href = 'dashboard-manager.html';
       } else {

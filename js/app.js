@@ -4,6 +4,7 @@
 import '../firebase-config.js';
 import { userService } from './user-service.js';
 import { enhancedReportService } from './enhanced-report-service.js';
+import { ROLE_CONTROLLER, ROLE_MANAGER } from './constants.js';
 
 class App {
   constructor() {
@@ -19,7 +20,7 @@ class App {
   // Initialize the application
   async init() {
     try {
-      console.log('🚀 Initializing Thinkers Afrika Shift Report System...');
+      console.log('ðŸš€ Initializing Thinkers Afrika Shift Report System...');
 
       // Set up authentication state listener (now blocking)
       await this.setupAuthListener();
@@ -28,16 +29,16 @@ class App {
       this.initializeUI();
 
       this.isInitialized = true;
-      console.log('✅ Application initialized successfully');
+      console.log('âœ… Application initialized successfully');
     } catch (error) {
-      console.error('❌ Failed to initialize application:', error);
+      console.error('âŒ Failed to initialize application:', error);
       this.showError('Failed to initialize application. Please refresh the page.');
     }
   }
 
   // Set up authentication state listener using central guard
   async setupAuthListener() {
-    console.log('📱 App: Initializing with Authentication Guard...');
+    console.log('ðŸ“± App: Initializing with Authentication Guard...');
 
     try {
       // Use the central authentication guard as the primary gatekeeper
@@ -45,7 +46,7 @@ class App {
 
       if (authResult.authenticated) {
         console.log(
-          '📱 App: User authenticated via guard:',
+          'ðŸ“± App: User authenticated via guard:',
           authResult.user.email,
           'Role:',
           authResult.role
@@ -59,16 +60,16 @@ class App {
         this.handlePageLogic();
 
         if (authResult.error) {
-          console.warn('📱 App: Authentication completed with warning:', authResult.error);
+          console.warn('ðŸ“± App: Authentication completed with warning:', authResult.error);
         }
       } else {
-        console.log('📱 App: User not authenticated via guard');
+        console.log('ðŸ“± App: User not authenticated via guard');
         this.currentUser = null;
         this.userRole = null;
         this.userPermissions = null;
       }
     } catch (error) {
-      console.error('📱 App: Error during authentication guard initialization:', error);
+      console.error('ðŸ“± App: Error during authentication guard initialization:', error);
     }
   }
 
@@ -136,7 +137,7 @@ class App {
         this.handleApprovalPage();
         break;
       default:
-        console.log('📄 Unknown page, no specific logic needed');
+        console.log('ðŸ“„ Unknown page, no specific logic needed');
     }
   }
 
@@ -157,44 +158,44 @@ class App {
   // Handle login page logic
   handleLoginPage() {
     // Don't redirect here - let the login page's own onAuthStateChanged handle it
-    console.log('📄 Login page logic - individual page will handle redirects');
+    console.log('ðŸ“„ Login page logic - individual page will handle redirects');
   }
 
   // Handle manager dashboard logic
   handleManagerDashboard() {
     // Don't redirect here - let the dashboard page's own onAuthStateChanged handle it
-    console.log('👑 Manager dashboard logic - individual page will handle redirects');
+    console.log('ðŸ‘‘ Manager dashboard logic - individual page will handle redirects');
     this.loadManagerData();
   }
 
   // Handle controller dashboard logic
   handleControllerDashboard() {
     // Don't redirect here - let the dashboard page's own onAuthStateChanged handle it
-    console.log('🎮 Controller dashboard logic - individual page will handle redirects');
+    console.log('ðŸŽ® Controller dashboard logic - individual page will handle redirects');
     this.loadControllerData();
   }
 
   // Handle report form logic
   handleReportForm() {
-    console.log('📝 Report form loaded');
+    console.log('ðŸ“ Report form loaded');
     this.loadUserReports();
   }
 
   // Handle approval page logic
   handleApprovalPage() {
     if (!this.userPermissions?.canApprove) {
-      console.log('⚠️ User cannot approve reports, redirecting to dashboard');
+      console.log('âš ï¸ User cannot approve reports, redirecting to dashboard');
       this.redirectToDashboard();
       return;
     }
 
-    console.log('✅ Approval page loaded');
+    console.log('âœ… Approval page loaded');
     this.loadReportsForApproval();
   }
 
   // Redirect to appropriate dashboard based on user role
   redirectToDashboard() {
-    if (this.userRole === 'manager') {
+    if (this.userRole === ROLE_MANAGER) {
       window.location.href = 'dashboard-manager.html';
     } else {
       window.location.href = 'dashboard-controller.html';
@@ -204,12 +205,12 @@ class App {
   // Load manager dashboard data
   async loadManagerData() {
     try {
-      console.log('📊 Loading manager dashboard data...');
+      console.log('ðŸ“Š Loading manager dashboard data...');
 
       // Load all reports
       const reportsResult = await enhancedReportService.getAllReports({ limit: 10 });
       if (reportsResult.success) {
-        this.displayReports(reportsResult.reports, 'manager');
+        this.displayReports(reportsResult.reports, ROLE_MANAGER);
       }
 
       // Load statistics
@@ -226,12 +227,12 @@ class App {
   // Load controller dashboard data
   async loadControllerData() {
     try {
-      console.log('📊 Loading controller dashboard data...');
+      console.log('ðŸ“Š Loading controller dashboard data...');
 
       // Load user's reports
       const reportsResult = await enhancedReportService.getUserReports({ limit: 10 });
       if (reportsResult.success) {
-        this.displayReports(reportsResult.reports, 'controller');
+        this.displayReports(reportsResult.reports, ROLE_CONTROLLER);
       }
 
       // Load reports for review (if user can approve)
@@ -348,7 +349,7 @@ class App {
   getActionButtons(report, userType) {
     let buttons = '';
 
-    if (userType === 'manager') {
+    if (userType === ROLE_MANAGER) {
       if (report.status === 'draft') {
         buttons += `<button class="edit-report-btn px-3 py-1 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600" data-report-id="${report.id}">Edit</button>`;
       }
@@ -356,7 +357,7 @@ class App {
         buttons += `<button class="approve-report-btn px-3 py-1 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600" data-report-id="${report.id}">Approve</button>`;
         buttons += `<button class="reject-report-btn px-3 py-1 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600" data-report-id="${report.id}">Reject</button>`;
       }
-    } else if (userType === 'controller') {
+    } else if (userType === ROLE_CONTROLLER) {
       if (report.status === 'draft') {
         buttons += `<button class="edit-report-btn px-3 py-1 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600" data-report-id="${report.id}">Edit</button>`;
         buttons += `<button class="submit-report-btn px-3 py-1 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600" data-report-id="${report.id}">Submit</button>`;
@@ -438,7 +439,7 @@ class App {
       card.innerHTML = `
         <div>
           <div class="font-semibold text-gray-900">${report.reportName || 'Unnamed Report'}</div>
-          <div class="text-sm text-gray-600">${report.shiftDate || ''} • ${report.shiftType || ''}</div>
+          <div class="text-sm text-gray-600">${report.shiftDate || ''} â€¢ ${report.shiftType || ''}</div>
           <div class="mt-1">${statusBadge}</div>
         </div>
         <div class="flex gap-2">

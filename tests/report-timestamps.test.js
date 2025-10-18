@@ -18,12 +18,15 @@ const {
 
 const { nowIso } = require('../js/utils.cjs');
 
+let ROLE_CONTROLLER;
+
 let testEnv;
 let controllerDb;
 const controllerUid = 'controller-test-user';
 
 describe('shiftReports timestamp lifecycle', () => {
   beforeAll(async () => {
+    ({ ROLE_CONTROLLER } = await import('../js/constants.js'));
     testEnv = await initializeTestEnvironment({
       projectId: 'controller-shift-revamp-tests',
       firestore: {
@@ -37,7 +40,7 @@ describe('shiftReports timestamp lifecycle', () => {
         uid: controllerUid,
         email: 'controller@example.com',
         displayName: 'Test Controller',
-        role: 'controller',
+        role: ROLE_CONTROLLER,
         permissions: {
           canCreateReports: true,
           canViewAll: false,

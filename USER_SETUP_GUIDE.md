@@ -81,12 +81,13 @@
 
 ## Testing
 
-1. **Test login with each user**
-2. **Verify role-based access:**
-   - Controllers should see their dashboard
-   - Manager should see manager dashboard
-   - All users should be able to create reports
-   - All users should be able to review submitted reports
+1. **Sign-in validation** – confirm each seeded account can authenticate and lands on the correct dashboard.
+2. **Report workflow** – create a draft, submit for review, approve/reject from the manager dashboard.
+3. **Messaging checks**
+   - Watch the navbar badge increase when a report is submitted and when new chat messages arrive.
+   - Open `messages.html` and verify the conversation stream, unread counters, and ability to reply.
+   - Ensure mark-as-read clears the badge for the current user.
+4. **Emulator smoke test** – run `pnpm emulator:start` to exercise the Firestore emulator locally before deploying to production.
 
 ## Security Notes
 
@@ -95,6 +96,14 @@
 - Users can only edit their own draft reports
 - Users can review any submitted report
 - Manager can view and manage everything
+
+## Real-time Messaging Overview
+
+- Every submitted report spins up a conversation document (`conversations/{reportId}`) containing the controllers on duty and all managers with approval permissions.
+- The conversation powers the unread badge in the navbar and the dedicated `messages.html` workspace. Controllers see a “View chat” link immediately after submitting a report; managers have an “Open chat” action beside each report row.
+- Cloud Functions append system messages when reports are submitted, approved, or rejected. Unread counters are updated automatically for all participants except the sender.
+- Firestore security rules restrict read/write access to the `participants` array. Clients can only reset their own unread counter via `markConversationRead`.
+- Required index: participants `array-contains` + `lastMessageAt` descending (included in `firestore.indexes.json`). Deploy indexes alongside rules after pulling the latest code.
 
 ## Password Policy
 

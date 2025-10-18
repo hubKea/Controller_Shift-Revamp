@@ -48,27 +48,27 @@ The application is designed for contributors who prefer declarative HTML and dir
 
 ```
 Controller_Shift-Revamp/
-├── dashboard-controller.html
-├── dashboard-manager.html
-├── report-form.html
-├── index.html
-├── js/
-│   ├── enhanced-report-service.js
-│   ├── user-service.js
-│   ├── data-model.js
-│   ├── utils.js
-│   └── app.js
-├── functions/
-│   ├── index.js
-│   └── package.json
-├── firestore.rules
-├── firestore.indexes.json
-├── README.md                 ← you are here
-├── USER_SETUP_GUIDE.md
-├── SCHEMA.md
-├── firebase.json
-├── .firebaserc
-└── package.json
++-- dashboard-controller.html
++-- dashboard-manager.html
++-- report-form.html
++-- index.html
++-- js/
+¦   +-- enhanced-report-service.js
+¦   +-- user-service.js
+¦   +-- data-model.js
+¦   +-- utils.js
+¦   +-- app.js
++-- functions/
+¦   +-- index.js
+¦   +-- package.json
++-- firestore.rules
++-- firestore.indexes.json
++-- README.md                 ? you are here
++-- USER_SETUP_GUIDE.md
++-- SCHEMA.md
++-- firebase.json
++-- .firebaserc
++-- package.json
 ```
 
 ## Prerequisites
@@ -94,7 +94,7 @@ Controller_Shift-Revamp/
    pnpm install
    ```
 
-   This installs top-level dependencies (Firebase Admin SDK, Firebase Functions) and will hoist client-side test/dev tooling.
+   This pulls the Firebase Admin SDK, Cloud Functions runtime, and all front-end dependencies needed for development.
 
 3. **Configure Firebase environment**
 
@@ -109,113 +109,63 @@ Controller_Shift-Revamp/
      | `FIREBASE_API_KEY` | Web API key from the Firebase console. |
      | `FIREBASE_AUTH_DOMAIN` | Auth domain (usually `<project-id>.firebaseapp.com`). |
      | `FIREBASE_PROJECT_ID` | Firebase project ID. |
-     | `FIREBASE_STORAGE_BUCKET` | Storage bucket (optional for this app). |
-     | `FIREBASE_MESSAGING_SENDER_ID` | Sender ID (used for messaging/analytics if enabled). |
+     | `FIREBASE_STORAGE_BUCKET` | Optional storage bucket used for future attachments. |
+     | `FIREBASE_MESSAGING_SENDER_ID` | Sender ID (only needed if Cloud Messaging is enabled). |
      | `FIREBASE_APP_ID` | Web app ID. |
      | `FIREBASE_MEASUREMENT_ID` | Optional analytics measurement ID. |
 
-   - When serving pages as static HTML (without a bundler), expose the same values before loading `firebase-config.js` by providing a small script that sets `window.__FIREBASE_CONFIG__`. For example:
-
-     ```html
-     <script>
-       window.__FIREBASE_CONFIG__ = {
-         apiKey: '…',
-         authDomain: '…',
-         projectId: '…',
-         storageBucket: '…',
-         messagingSenderId: '…',
-         appId: '…',
-         measurementId: '…'
-       };
-     </script>
-     <script type="module" src="./firebase-config.js"></script>
-     ```
-
+   - When serving pages as static HTML (without a bundler), expose the same values before loading `firebase-config.js` by defining `window.__FIREBASE_CONFIG__`. A sample snippet lives at the bottom of `firebase-config.js`.
    - Update `.firebaserc` to point to your Firebase project ID.
    - See [USER_SETUP_GUIDE.md](./USER_SETUP_GUIDE.md) to seed initial users with the correct roles (`controller`, `manager`) and permissions (`canApprove`, `canViewAll`, etc.).
 
-4. **Run the application locally**
+4. **Run the Firebase emulators (recommended)**
 
-   The application is static HTML + ES modules. During development you can serve the root directory with any HTTP server:
+   The UI talks directly to Firestore. Running the Firestore emulator locally keeps test data isolated:
 
    ```bash
-   pnpm dev
+   pnpm emulator:start
    ```
 
-   > If `pnpm dev` is not yet defined, use a simple server such as `npx serve` or your editor’s Live Preview. Ensure `firebase-config.js` points to your Firebase project/emulators.
+   > Requires Java 11+. The script starts the Firestore emulator and exposes the Emulator UI.
 
-5. **Sign in and explore the workflow**
+5. **Serve the front-end**
 
-   - Controllers navigate to `report-form.html` to create reports.
-   - Managers open `dashboard-manager.html` to monitor submissions.
-   - Review tokens and notifications are orchestrated by Cloud Functions (`functions/index.js`).
+   The project is pure HTML + ES modules. Use any static file server:
+
+   ```bash
+   npx serve .
+   ```
+
+   Visit `report-form.html`, `dashboard-controller.html`, or `dashboard-manager.html` after signing in with a seeded account.
+
+6. **Sign in and explore the workflow**
+
+   - Controllers use `report-form.html` to capture shifts, submit for review, and access the accompanying chat via the navbar badge.
+   - Managers monitor `dashboard-manager.html`, approve/reject submissions, and open the linked conversation for each report.
+   - Real-time conversations, unread badges, and notifications are orchestrated by Cloud Functions (`functions/index.js`).
 
 ## Running Tests
 
-The project provides both unit tests and integration tests. Unit tests mock Firebase services and can run without any external dependencies, while integration tests use the Firebase emulator suite.
-
-### Unit Tests
-
-Run unit tests without needing Java or Firebase emulators:
+Unit tests exercise the pure JavaScript modules (PDF generation, utilities, messaging helpers) and run without any external services:
 
 ```bash
 pnpm test
-# or explicitly:
-pnpm test:unit
 ```
 
-Unit tests include:
-- `messages-service.test.js` - Tests message service functions with mocked Firestore
-- `utils.test.cjs` - Utility function tests
-- `pdf-service.test.mjs` - PDF generation tests
-
-### Integration Tests
-
-Integration tests require **Java 11 or higher** for the Firebase emulator. These tests validate Cloud Functions triggers, security rules, and real Firestore operations.
+Integration-style tests that depend on the Firestore emulator can be run with:
 
 ```bash
-# Ensure Java 11+ is installed
-java -version
-
-# Run integration tests
-pnpm test:integration
+pnpm test:emu
 ```
 
-Integration tests include:
-- `messages-triggers.test.js` - Tests for conversation creation, message triggers, and security rules
+> `pnpm test:emu` automatically spins up the Firestore emulator via `firebase emulators:exec`. Ensure Java 11+ is available.
 
-### Running All Tests
+Other helpful commands:
 
-To run both unit and integration tests:
+- `pnpm typecheck` – lightweight static analysis gate used by CI.
+- `pnpm emulator:start` – manually launch the Firestore emulator and UI for exploratory testing.
 
-```bash
-pnpm test:all
-```
-
-### Type Checking
-
-Run the lightweight typecheck placeholder to ensure the repository's TypeScript gate passes CI hooks:
-
-```bash
-pnpm typecheck
-```
-
-### Emulator utilities
-
-- Firestore emulator rules are automatically loaded from `firestore.rules`.
-- Tests seed mock users via `@firebase/rules-unit-testing`.
-- To explore emulator data manually, use the Firebase Emulator UI:
-
-  ```bash
-  firebase emulators:start --only firestore
-  ```
-
-### CI/CD Integration
-
-The GitHub Actions workflow runs unit tests automatically on every push and pull request. Integration tests are:
-- Run automatically on pushes to the `main` branch
-- Available as a manual workflow dispatch option
-- Skipped on pull requests to speed up CI (unless manually triggered)
+The GitHub Actions workflow runs `pnpm lint`, `pnpm typecheck`, and `pnpm test` on every push and pull request to keep the main branch healthy.
 
 ## Linting and Formatting
 
@@ -232,6 +182,27 @@ pnpm lint:fix
 ```
 
 The `.eslintrc.cjs` config extends `eslint:recommended` and enables Prettier via `plugin:prettier/recommended`, while `.prettierrc` sets defaults such as `singleQuote`, `trailingComma: "es5"`, and `printWidth: 100`. Editors wired to ESLint/Prettier will now format files consistently with the CI pipeline.
+
+## Messaging & Conversations
+
+- Each submitted shift report automatically spawns a conversation (`conversations/{reportId}`) that includes the on-duty controllers and managers with `canApprove` permissions.
+- Real-time updates power the navbar badge on dashboards and the report form. The badge aggregates `unreadCount[uid]` across all conversations and links to `messages.html`.
+- `messages.html` provides a two-pane experience: the left sidebar lists conversations ordered by `lastMessageAt`, while the right pane streams the selected chat, highlights system messages, and zeroes the current user’s unread counter via `markConversationRead`.
+- Cloud Functions write the first system message on submission/decision and increment unread counters for non-senders. No outbound email is sent – in-app chat is now the source of truth for review coordination.
+- Security rules restrict both conversations and messages to the participant list. Clients may only zero their own unread counter; all other updates are rejected.
+
+### Required indexes
+
+Add the following composite index (already committed in `firestore.indexes.json`) if you are bootstrapping a new project:
+
+```
+collectionGroup: conversations
+ fields:
+   - participants arrayContains
+   - lastMessageAt desc
+```
+
+Re-run `firebase deploy --only firestore:indexes` after pulling the latest repo to ensure the new index is created.
 Legacy HTML screens and the current manager dashboard controller are temporarily excluded via `.eslintignore` until they are refactored to valid module-friendly markup.
 
 ## PDF Generation
@@ -247,6 +218,8 @@ The workflow typically involves three deployment targets: Firestore rules, Fires
 ```bash
 firebase deploy --only functions,firestore:rules,firestore:indexes
 ```
+
+> **Migration note:** In-app messaging replaces legacy email notifications. Deploying the latest `functions` bundle and Firestore rules is required to enable conversations and unread badges in production.
 
 ### Firestore rules and indexes
 
@@ -308,3 +281,4 @@ When adding new collection fields or business rules:
 ---
 
 By consolidating documentation here, the project aims to help new contributors ship features safely, maintain strict security controls, and retain a clear understanding of the controller/manager workflow. If you run into gaps or outdated guidance, open an issue or update the README to keep the team aligned.
+

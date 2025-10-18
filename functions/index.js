@@ -17,7 +17,6 @@ const APP_BASE_URL =
   'https://thinkers-afrika-shift-reports.web.app';
 const APPROVAL_PAGE =
   (functions.config().app && functions.config().app.approval_url) || `${APP_BASE_URL}/approve.html`;
-const MAIL_COLLECTION = (functions.config().mail && functions.config().mail.collection) || 'mail';
 
 function normalizeStatus(status) {
   if (!status) return 'pending';
@@ -781,6 +780,8 @@ exports.users = {
   }),
 };
 
+// Legacy hook renamed: this trigger now refreshes reviewer tokens but no longer queues emails.
+// Real-time in-app messaging replaces outbound email notifications.
 exports.sendReviewRequestEmail = functions.firestore
   .document('shiftReports/{reportId}')
   .onWrite(async (change, context) => {

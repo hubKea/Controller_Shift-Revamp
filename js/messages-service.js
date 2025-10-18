@@ -7,7 +7,7 @@ import {
   query,
   serverTimestamp,
   updateDoc,
-  where
+  where,
 } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 import { db } from '../firebase-config.js';
 
@@ -114,7 +114,7 @@ export async function sendMessage(conversationId, payload) {
       senderId,
       senderName,
       timestamp: serverTimestamp(),
-      system: false
+      system: false,
     });
     return docRef.id;
   } catch (error) {
@@ -139,7 +139,7 @@ export async function markConversationRead(conversationId, userId) {
   try {
     const conversationRef = doc(db, 'conversations', convId);
     await updateDoc(conversationRef, {
-      [`unreadCount.${normalizedUid}`]: 0
+      [`unreadCount.${normalizedUid}`]: 0,
     });
   } catch (error) {
     console.warn('[messages-service] Failed to mark conversation read', error);

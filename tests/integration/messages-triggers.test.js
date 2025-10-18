@@ -1,5 +1,21 @@
-const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
-const { doc, setDoc, getDoc, updateDoc, collection, addDoc, query, where, getDocs, serverTimestamp, Timestamp } = require('firebase/firestore');
+const {
+  initializeTestEnvironment,
+  assertSucceeds,
+  assertFails,
+} = require('@firebase/rules-unit-testing');
+const {
+  doc,
+  setDoc,
+  getDoc,
+  updateDoc,
+  collection,
+  addDoc,
+  query,
+  where,
+  getDocs,
+  serverTimestamp,
+  Timestamp,
+} = require('firebase/firestore');
 
 // Test environment variables
 const PROJECT_ID = 'test-messages-triggers';
@@ -71,7 +87,7 @@ describe('Messages Integration Tests', () => {
 
       // Wait for trigger to process (in real implementation)
       // Note: In actual integration test with emulator, you'd need to wait or mock the trigger
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Assert: Check conversation updates
       const updatedConv = await getDoc(conversationRef);
@@ -109,7 +125,7 @@ describe('Messages Integration Tests', () => {
       await addDoc(messagesRef, systemMessage);
 
       // Wait for trigger
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Assert: Unread counts should remain 0
       const updatedConv = await getDoc(conversationRef);
@@ -130,9 +146,7 @@ describe('Messages Integration Tests', () => {
         reportDate: '2024-01-15',
         controller1: { uid: 'test-user-1', name: 'Controller 1' },
         controller2: { uid: 'test-user-2', name: 'Controller 2' },
-        reviewers: [
-          { uid: 'manager-1', name: 'Manager 1' },
-        ],
+        reviewers: [{ uid: 'manager-1', name: 'Manager 1' }],
       });
 
       // Act: Update status to under_review
@@ -142,7 +156,7 @@ describe('Messages Integration Tests', () => {
       });
 
       // Wait for trigger
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Assert: Check if conversation was created
       const conversationsQuery = query(
@@ -153,7 +167,7 @@ describe('Messages Integration Tests', () => {
 
       // In a real trigger test, this would be created by the Cloud Function
       expect(convSnapshot.empty).toBe(true); // Currently no trigger implementation
-      
+
       // Expected behavior when trigger is implemented:
       // expect(convSnapshot.size).toBe(1);
       // const convData = convSnapshot.docs[0].data();
@@ -194,27 +208,29 @@ describe('Messages Integration Tests', () => {
       // Act: Approve the report
       await updateDoc(reportRef, {
         status: 'approved',
-        approvals: [{
-          action: 'approved',
-          timestamp: serverTimestamp(),
-          userId: 'manager-1',
-          userName: 'Manager 1',
-          comments: 'Looks good!',
-        }],
+        approvals: [
+          {
+            action: 'approved',
+            timestamp: serverTimestamp(),
+            userId: 'manager-1',
+            userName: 'Manager 1',
+            comments: 'Looks good!',
+          },
+        ],
       });
 
       // Wait for trigger
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Assert: Check for approval system message
       const messagesSnapshot = await getDocs(collection(conversationRef, 'messages'));
-      
+
       // In a real trigger test, this message would be created by the Cloud Function
       expect(messagesSnapshot.empty).toBe(true); // Currently no trigger implementation
 
       // Expected behavior when trigger is implemented:
       // expect(messagesSnapshot.size).toBeGreaterThan(0);
-      // const approvalMsg = messagesSnapshot.docs.find(d => 
+      // const approvalMsg = messagesSnapshot.docs.find(d =>
       //   d.data().system && d.data().content.includes('approved')
       // );
       // expect(approvalMsg).toBeTruthy();
@@ -273,7 +289,7 @@ describe('Messages Integration Tests', () => {
       // Assert: Non-participant cannot add message
       const user3Context = testEnv.authenticatedContext('test-user-3');
       const user3Db = user3Context.firestore();
-      
+
       const messageData = {
         content: 'Unauthorized message',
         senderId: 'test-user-3',

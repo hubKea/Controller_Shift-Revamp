@@ -12,12 +12,6 @@ const db = admin.firestore();
 const FieldValue = admin.firestore.FieldValue;
 const Timestamp = admin.firestore.Timestamp;
 
-const APP_BASE_URL =
-  (functions.config().app && functions.config().app.base_url) ||
-  'https://thinkers-afrika-shift-reports.web.app';
-const APPROVAL_PAGE =
-  (functions.config().app && functions.config().app.approval_url) || `${APP_BASE_URL}/approve.html`;
-
 function normalizeStatus(status) {
   if (!status) return 'pending';
   return String(status).toLowerCase();
@@ -255,90 +249,6 @@ function formatDateForEmail(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' });
-}
-
-function buildReviewEmailHtml(report, reviewerName, link) {
-  const safeName = reviewerName || 'Team';
-  const shiftDate = formatDateForEmail(report.shiftDate || report.reportDate);
-  const siteName = report.siteName || 'the assigned site';
-  const controllers =
-    report.controllers && report.controllers.length
-      ? report.controllers.join(', ')
-      : 'Shift Controller';
-
-  return `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Shift Report Review</title>
-    <style>
-      body { font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8fafc; color: #0f172a; margin: 0; padding: 0; }
-      a { color: #137fec; }
-      .wrapper { max-width: 640px; margin: 0 auto; padding: 32px 16px; }
-      .card { background: #ffffff; border-radius: 16px; padding: 32px; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08); }
-      .btn { display: inline-block; padding: 14px 28px; border-radius: 999px; background: #137fec; color: #ffffff; font-weight: 600; text-decoration: none; letter-spacing: 0.02em; }
-      .meta { margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 16px; font-size: 14px; color: #475569; }
-      .footer { text-align: center; font-size: 12px; color: #94a3b8; margin-top: 24px; }
-    </style>
-  </head>
-  <body>
-    <div class="wrapper">
-      <div class="card">
-        <h1 style="font-size: 24px; margin-bottom: 16px;">Action Required: Shift Report Review</h1>
-        <p style="font-size: 16px; line-height: 1.6;">Hello ${safeName},</p>
-        <p style="font-size: 16px; line-height: 1.6;">A new shift report for <strong>${shiftDate}</strong> has been submitted and is ready for your review.</p>
-        <p style="font-size: 16px; line-height: 1.6;">Please review the report details and take the appropriate action as soon as possible.</p>
-        <table role="presentation" style="width:100%; margin: 24px 0;">
-          <tr>
-            <td style="padding: 12px 0; color: #475569; font-size: 14px;">
-              <strong>Site:</strong> ${siteName}<br />
-              <strong>Shift Controllers:</strong> ${controllers}<br />
-              <strong>Shift Date:</strong> ${shiftDate}
-            </td>
-          </tr>
-        </table>
-        <p style="margin: 32px 0; text-align: center;">
-          <a class="btn" href="${link}" target="_blank" rel="noopener">Review Report</a>
-        </p>
-        <p style="font-size: 14px; line-height: 1.6; color: #475569;">If the button above does not work, copy and paste the following link into your browser:<br /><span style="word-break: break-all;">${link}</span></p>
-        <div class="meta">
-          <p>This link is unique to you and will automatically expire once you complete your review.</p>
-        </div>
-        <p style="font-size: 14px; line-height: 1.6; color: #475569;">Thank you for keeping our operations compliant and on schedule.</p>
-        <p style="font-size: 14px; line-height: 1.6; color: #475569; margin-top: 24px;">Best regards,<br />Thinkers Afrika Control Room</p>
-      </div>
-      <div class="footer">
-        This is an automated message. Please do not reply directly to this email.
-      </div>
-    </div>
-  </body>
-</html>`;
-}
-
-function buildReviewEmailText(report, reviewerName, link) {
-  const safeName = reviewerName || 'Team';
-  const shiftDate = formatDateForEmail(report.shiftDate || report.reportDate);
-  const siteName = report.siteName || 'the assigned site';
-  const controllers =
-    report.controllers && report.controllers.length
-      ? report.controllers.join(', ')
-      : 'Shift Controller';
-
-  return [
-    `Hello ${safeName},`,
-    '',
-    `A new shift report for ${shiftDate} (${siteName}) has been submitted and is ready for your review.`,
-    `Shift Controllers: ${controllers}`,
-    '',
-    'Please review the report and take action using the secure link below:',
-    link,
-    '',
-    'If you have already completed this review, you can disregard this message.',
-    '',
-    'Thank you for your prompt attention.',
-    'Thinkers Afrika Control Room',
-  ].join('\\n');
 }
 
 const userIdentityCache = new Map();
@@ -615,7 +525,12 @@ async function gatherConversationParticipantUids(reportData) {
   const controllerUids = collectControllerUids(reportData);
   controllerUids.forEach((uid) => participantSet.add(sanitizeUid(uid)));
 
-  [reportData.createdBy, reportData.submittedBy, reportData.controller1Uid, reportData.controller2Uid]
+  [
+    reportData.createdBy,
+    reportData.submittedBy,
+    reportData.controller1Uid,
+    reportData.controller2Uid,
+  ]
     .map(sanitizeUid)
     .forEach((uid) => {
       if (uid) participantSet.add(uid);
@@ -654,7 +569,7 @@ async function getOrCreateConversation(reportId, reportData, participantUids = [
         siteName,
         unreadCount,
         createdAt: FieldValue.serverTimestamp(),
-        lastMessageAt: null
+        lastMessageAt: null,
       });
       return;
     }
@@ -670,7 +585,7 @@ async function getOrCreateConversation(reportId, reportData, participantUids = [
     const updates = {
       participants: merged,
       shiftDate,
-      siteName
+      siteName,
     };
 
     tx.update(conversationRef, updates);
@@ -703,7 +618,7 @@ async function addSystemMessage(conversationRef, { content, senderId, senderName
     senderId: resolvedSenderId,
     senderName: resolvedSenderName,
     content: content || '',
-    timestamp: FieldValue.serverTimestamp()
+    timestamp: FieldValue.serverTimestamp(),
   };
 
   if (system !== undefined) {
@@ -784,7 +699,7 @@ exports.users = {
 // Real-time in-app messaging replaces outbound email notifications.
 exports.sendReviewRequestEmail = functions.firestore
   .document('shiftReports/{reportId}')
-  .onWrite(async (change, context) => {
+  .onWrite(async (change) => {
     const afterSnap = change.after;
     if (!afterSnap.exists) {
       return null;
@@ -924,8 +839,7 @@ exports.onReportSubmitted = functions.firestore
         submitterIdentity = await getUserIdentityByUid(submitterUid);
         if (submitterIdentity) {
           submitterUid = submitterIdentity.uid;
-          submitterName =
-            submitterIdentity.displayName || submitterIdentity.email || submitterName;
+          submitterName = submitterIdentity.displayName || submitterIdentity.email || submitterName;
         }
       }
 
@@ -934,13 +848,13 @@ exports.onReportSubmitted = functions.firestore
         content: messageText,
         senderId: submitterUid || 'system',
         senderName: submitterName,
-        system: true
+        system: true,
       });
     } catch (error) {
       if (functions.logger) {
         functions.logger.error('Failed to handle conversation creation on submission', {
           reportId: context.params.reportId,
-          error: error.message
+          error: error.message,
         });
       }
     }
@@ -950,7 +864,7 @@ exports.onReportSubmitted = functions.firestore
 
 exports.onReportUnderReview = functions.firestore
   .document('shiftReports/{reportId}')
-  .onUpdate(async (change, context) => {
+  .onUpdate(async (change) => {
     if (!change.before.exists || !change.after.exists) {
       return null;
     }
@@ -1002,7 +916,7 @@ exports.onReportUnderReview = functions.firestore
 
     const payload = {
       type: 'review_request',
-      reportId: context.params.reportId,
+      reportId: change.after.ref.id,
       actorId,
       actorName,
       status: 'under_review',
@@ -1189,13 +1103,13 @@ exports.onReportDecision = functions.firestore
         content: decisionText,
         senderId: sanitizeUid(actorId) || 'system',
         senderName: actorName,
-        system: true
+        system: true,
       });
     } catch (error) {
       if (functions.logger) {
         functions.logger.error('Failed to append decision message to conversation', {
           reportId,
-          error: error.message
+          error: error.message,
         });
       }
     }
@@ -1205,7 +1119,7 @@ exports.onReportDecision = functions.firestore
 
 exports.onConversationMessageCreated = functions.firestore
   .document('conversations/{conversationId}/messages/{messageId}')
-  .onCreate(async (snapshot, context) => {
+  .onCreate(async (snapshot) => {
     const message = snapshot.data();
     const conversationRef = snapshot.ref.parent.parent;
     if (!conversationRef) {
@@ -1247,7 +1161,7 @@ exports.onConversationMessageCreated = functions.firestore
       });
 
       const updatePayload = {
-        lastMessageAt: messageTimestamp || FieldValue.serverTimestamp()
+        lastMessageAt: messageTimestamp || FieldValue.serverTimestamp(),
       };
 
       Object.assign(updatePayload, unreadUpdates);

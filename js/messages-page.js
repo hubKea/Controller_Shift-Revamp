@@ -28,9 +28,7 @@ const elements = {
 };
 
 const urlParams = new URLSearchParams(window.location.search);
-const initialConversationId = urlParams.get('conv')
-  ? urlParams.get('conv').trim()
-  : '';
+const initialConversationId = urlParams.get('conv') ? urlParams.get('conv').trim() : '';
 if (initialConversationId) {
   state.pendingConversationId = initialConversationId;
 }

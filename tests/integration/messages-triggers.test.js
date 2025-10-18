@@ -318,4 +318,3 @@ describe('Messages Integration Tests', () => {
     });
   });
 });
-

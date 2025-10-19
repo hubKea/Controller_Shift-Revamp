@@ -18,7 +18,7 @@ The system is intentionally lightweight—built from HTML, modern JavaScript, an
 3. Controllers are immediately notified of the decision. Rejection requires a comment and keeps reviewers in sync with clear audit fields.
 4. All activity is recorded in Firestore collections (`shiftReports`, `approvals`, `inboxes`), with Cloud Functions enforcing the same workflow rules the UI expects.
 
-> **Audit improvements:** Controller dropdowns now read from the Firestore `users` collection—update the roster there instead of editing code. Submitted reports must list two different on-duty controllers and can only be approved or rejected by someone other than the author; both the UI and service layer enforce this automatically.
+> **Audit improvements:** Controller dropdowns now read from the Firestore `users` collection—update the roster there instead of editing code. Submitted reports must list two different on-duty controllers and can only be approved or rejected by someone other than the author; both the UI and service layer enforce this automatically. Dropdown menus on the report form and dashboards fetch active users via the `users-listForAssign` callable function, keeping rosters in sync without widening Firestore client permissions.
 
 The application is designed for contributors who prefer declarative HTML and direct Firebase SDK usage, complemented by automated security rules, schema documentation, and emulator-backed tests.
 

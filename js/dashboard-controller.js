@@ -685,15 +685,18 @@ export class DashboardManager extends DashboardBase {
     if (this.controllerOptionsLoaded || !this.controllerSelect) return;
 
     try {
-      const usersRef = collection(db, "users");
-      const snapshot = await getDocs(
-        query(usersRef, where("role", "in", [ROLE_CONTROLLER, ROLE_MANAGER]))
+      const functionsModule = await import(
+        "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js"
       );
+      const functions = functionsModule.getFunctions();
+      const listForAssign = functionsModule.httpsCallable(functions, "users-listForAssign");
+      const response = await listForAssign({ roles: ["controller"] });
+      const items = Array.isArray(response?.data?.items) ? response.data.items : [];
+
       const controllers = new Set();
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data() || {};
-        if (data.isActive === false) return;
-        const name = normalizeString(data.displayName || data.email);
+      items.forEach((item) => {
+        if (!item || typeof item !== "object") return;
+        const name = normalizeString(item.displayName || item.email);
         if (name) controllers.add(name);
       });
 

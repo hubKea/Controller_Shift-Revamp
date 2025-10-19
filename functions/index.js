@@ -630,75 +630,6 @@ async function addSystemMessage(conversationRef, { content, senderId, senderName
   return conversationRef.collection('messages').add(payload);
 }
 
-exports.users = {
-  listForAssign: functions.https.onCall(async (data, context) => {
-    if (!context.auth || !context.auth.uid) {
-      throw new functions.https.HttpsError('unauthenticated', 'Sign in required.');
-    }
-
-    const { ROLE_CONTROLLER, ROLE_MANAGER } = await roleConstantsPromise;
-
-    const rawRoles = Array.isArray(data?.roles) ? data.roles : [];
-    const normalizedRoles = Array.from(
-      new Set(rawRoles.map((role) => (typeof role === 'string' ? role.trim() : '')).filter(Boolean))
-    );
-    const roles = normalizedRoles.length ? normalizedRoles : [ROLE_CONTROLLER, ROLE_MANAGER];
-
-    const MAX_IN_CLAUSE = 10;
-    const MAX_RESULTS = 200;
-    const roleChunks = [];
-    for (let index = 0; index < roles.length; index += MAX_IN_CLAUSE) {
-      roleChunks.push(roles.slice(index, index + MAX_IN_CLAUSE));
-    }
-
-    const firestore = admin.firestore();
-    const snapshots = await Promise.all(
-      roleChunks.map((chunk) =>
-        firestore
-          .collection('users')
-          .where('isActive', '==', true)
-          .where('role', 'in', chunk)
-          .limit(MAX_RESULTS)
-          .get()
-      )
-    );
-
-    const items = [];
-    const seen = new Set();
-
-    outer: for (const snap of snapshots) {
-      for (const docSnap of snap.docs) {
-        if (seen.has(docSnap.id)) {
-          continue;
-        }
-
-        const record = docSnap.data() || {};
-        const displayName =
-          (typeof record.displayName === 'string' && record.displayName.trim()) ||
-          (typeof record.name === 'string' && record.name.trim()) ||
-          (typeof record.email === 'string' && record.email.trim()) ||
-          'User';
-        const email = typeof record.email === 'string' ? record.email.trim() : '';
-        const role = typeof record.role === 'string' ? record.role : ROLE_CONTROLLER;
-
-        items.push({
-          uid: docSnap.id,
-          displayName,
-          email,
-          role,
-        });
-        seen.add(docSnap.id);
-
-        if (items.length >= MAX_RESULTS) {
-          break outer;
-        }
-      }
-    }
-
-    return { items };
-  }),
-};
-
 // Legacy hook renamed: this trigger now refreshes reviewer tokens but no longer queues emails.
 // Real-time in-app messaging replaces outbound email notifications.
 exports.sendReviewRequestEmail = functions.firestore
@@ -1361,3 +1292,80 @@ exports.reviewerRejectReport = functions.https.onCall(async (data) => {
 
   return result;
 });
+exports.users = {
+  listForAssign: functions.https.onCall(async (data, context) => {
+    if (!context.auth || !context.auth.uid) {
+      throw new functions.https.HttpsError('unauthenticated', 'Sign in required.');
+    }
+
+    const { ROLE_CONTROLLER, ROLE_MANAGER } = await roleConstantsPromise;
+
+    const rawRoles = Array.isArray(data?.roles) ? data.roles : [];
+    const normalizedRoles = Array.from(
+      new Set(
+        rawRoles
+          .map((role) => (typeof role === 'string' ? role.trim().toLowerCase() : ''))
+          .filter(Boolean)
+      )
+    );
+    const defaultRoles = [ROLE_CONTROLLER.toLowerCase(), ROLE_MANAGER.toLowerCase()];
+    const roles = normalizedRoles.length ? normalizedRoles : defaultRoles;
+
+    const MAX_IN_CLAUSE = 10;
+    const MAX_RESULTS = 200;
+    const roleChunks = [];
+    for (let index = 0; index < roles.length; index += MAX_IN_CLAUSE) {
+      roleChunks.push(roles.slice(index, index + MAX_IN_CLAUSE));
+    }
+
+    const snapshots = await Promise.all(
+      roleChunks.map((chunk) =>
+        db
+          .collection('users')
+          .where('isActive', '==', true)
+          .where('role', 'in', chunk)
+          .limit(MAX_RESULTS)
+          .get()
+      )
+    );
+
+    const items = [];
+    const seen = new Set();
+
+    outer: for (const snap of snapshots) {
+      for (const docSnap of snap.docs) {
+        if (seen.has(docSnap.id)) {
+          continue;
+        }
+
+        const record = docSnap.data() || {};
+        const rawDisplay =
+          (typeof record.displayName === 'string' && record.displayName.trim()) ||
+          (typeof record.name === 'string' && record.name.trim()) ||
+          (typeof record.email === 'string' && record.email.trim()) ||
+          '';
+        const displayName = rawDisplay || 'User';
+        const email = typeof record.email === 'string' ? record.email.trim() : '';
+        const role = typeof record.role === 'string' ? record.role.trim().toLowerCase() : '';
+
+        items.push({
+          uid: docSnap.id,
+          displayName,
+          email,
+          role,
+        });
+        seen.add(docSnap.id);
+
+        if (items.length >= MAX_RESULTS) {
+          break outer;
+        }
+      }
+    }
+
+    items.sort((a, b) =>
+      a.displayName.localeCompare(b.displayName, undefined, { sensitivity: 'base' })
+    );
+
+    return { items };
+  }),
+};

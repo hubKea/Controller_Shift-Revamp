@@ -78,24 +78,12 @@
               <div class="col-span-2">
                 <label class="block text-sm font-semibold text-gray-700 mb-2">On-duty Controllers</label>
                 <div class="grid md:grid-cols-2 gap-4">
-                  <select id="controller1" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required>
-                    <option value="">Select Controller</option>
-                    <option value="keamogetswe@thinkersafrika.co.za">Keamogetswe Maripane</option>
-                    <option value="sipho@thinkersafrika.co.za">Sipho Mahlinza</option>
-                    <option value="kabelo@thinkersafrika.co.za">Kabelo Tshabalala</option>
-                    <option value="gontle@thinkersafrika.co.za">Gontle Ditibane</option>
-                    <option value="matshidiso@thinkersafrika.co.za">Matshidiso Maake</option>
-                    <option value="john@thinkersafrika.co.za">John Macharaga</option>
-                  </select>
-                  <select id="controller2" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required>
-                    <option value="">Select Controller</option>
-                    <option value="keamogetswe@thinkersafrika.co.za">Keamogetswe Maripane</option>
-                    <option value="sipho@thinkersafrika.co.za">Sipho Mahlinza</option>
-                    <option value="kabelo@thinkersafrika.co.za">Kabelo Tshabalala</option>
-                    <option value="gontle@thinkersafrika.co.za">Gontle Ditibane</option>
-                    <option value="matshidiso@thinkersafrika.co.za">Matshidiso Maake</option>
-                    <option value="john@thinkersafrika.co.za">John Macharaga</option>
-                  </select>
+                    <select id="controller1" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required>
+                      <option value="">Select Controller</option>
+                    </select>
+                    <select id="controller2" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" required>
+                      <option value="">Select Controller</option>
+                    </select>
                 </div>
               </div>
             </section>
@@ -422,8 +410,106 @@
     import { nowIso } from './js/utils.js'; // Timestamp utility for client-side ISO strings
     import { generatePdf } from './js/pdf-service.js';
     import { ROLE_REVIEWER } from './js/constants.js';
-    
-    // Verify nowIso is loaded
+
+    const controllerSelects = ['controller1', 'controller2'].map((id) =>
+      document.getElementById(id)
+    );
+    let controllerOptionsLoaded = false;
+    let controllerOptionsLoading = false;
+
+    const populateControllerSelect = (select, items) => {
+      if (!select) return;
+      const preferredValue =
+        select.dataset.preferredEmail ||
+        select.dataset.preferredUid ||
+        select.value;
+
+      select.innerHTML = '';
+
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Select Controller';
+      select.appendChild(placeholder);
+
+      items.forEach((item) => {
+        if (!item?.email) return;
+        const option = document.createElement('option');
+        option.value = item.email;
+        option.textContent = item.displayName || item.email;
+        option.dataset.email = item.email;
+        option.dataset.uid = item.uid || '';
+        option.dataset.role = item.role || '';
+        select.appendChild(option);
+      });
+
+      if (preferredValue) {
+        select.value = preferredValue;
+      }
+
+      if (typeof applyPreferredSelectValue === 'function') {
+        applyPreferredSelectValue(select);
+      }
+    };
+
+    const loadControllerOptions = async () => {
+      if (controllerOptionsLoaded || controllerOptionsLoading) return;
+      controllerOptionsLoading = true;
+
+      try {
+        const current =
+          typeof userService.getCurrentUser === 'function' ? userService.getCurrentUser() : null;
+        if (!current?.isAuthenticated) {
+          return;
+        }
+
+        const functionsModule = await import(
+          'https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js'
+        );
+        const functions = functionsModule.getFunctions();
+        const listForAssign = functionsModule.httpsCallable(functions, 'users-listForAssign');
+        const response = await listForAssign({ roles: ['controller'] });
+        const items = Array.isArray(response?.data?.items) ? response.data.items : [];
+
+        items.sort((a, b) => {
+          const aName = (a.displayName || a.email || '').toLowerCase();
+          const bName = (b.displayName || b.email || '').toLowerCase();
+          return aName.localeCompare(bName);
+        });
+
+        controllerSelects.forEach((select) => populateControllerSelect(select, items));
+        controllerOptionsLoaded = true;
+      } catch (error) {
+        console.error('[ReportForm] Failed to load controller options:', error);
+      } finally {
+        controllerOptionsLoading = false;
+      }
+    };
+
+    const previousAuthHandler =
+      typeof userService.onAuthStateChange === 'function'
+        ? userService.onAuthStateChange.bind(userService)
+        : null;
+
+    userService.onAuthStateChange = (user, role, permissions) => {
+      if (previousAuthHandler) {
+        try {
+          previousAuthHandler(user, role, permissions);
+        } catch (error) {
+          console.error('[ReportForm] Previous auth handler failed', error);
+        }
+      }
+
+      if (user && user.uid) {
+        loadControllerOptions();
+      }
+    };
+
+    const currentSnapshot =
+      typeof userService.getCurrentUser === 'function' ? userService.getCurrentUser() : null;
+    if (currentSnapshot?.isAuthenticated) {
+      loadControllerOptions();
+    }
+
     let currentReportId = null;
     let currentReportData = null;
     const generatePdfBtn = document.getElementById('generatePdfBtn');
@@ -1231,3 +1317,4 @@ function showMessage(message, type = 'info', actionElements = []) {
   </script>
 </body>
 </html>
+

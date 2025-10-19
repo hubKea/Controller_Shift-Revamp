@@ -58,6 +58,7 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow list: if isManager();
       allow read: if isManager();
 
       allow create: if isAuthenticated() && request.auth.uid == userId && request.resource.data.uid == request.auth.uid;
@@ -103,7 +104,8 @@ service cloud.firestore {
         (request.resource.data.status == 'submitted' ||
          request.resource.data.status == 'under_review' ||
          request.resource.data.status == 'approved' ||
-         request.resource.data.status == 'rejected');
+         request.resource.data.status == 'rejected') &&
+        resource.data.createdBy != request.auth.uid;
 
       allow delete: if isAuthenticated() && isCreator(resource) && isDraft(resource);
       allow delete: if isManager() && isDraft(resource);

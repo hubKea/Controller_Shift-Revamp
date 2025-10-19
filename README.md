@@ -18,7 +18,7 @@ The system is intentionally lightweight—built from HTML, modern JavaScript, an
 3. Controllers are immediately notified of the decision. Rejection requires a comment and keeps reviewers in sync with clear audit fields.
 4. All activity is recorded in Firestore collections (`shiftReports`, `approvals`, `inboxes`), with Cloud Functions enforcing the same workflow rules the UI expects.
 
-> **Audit improvements:** Controller dropdowns are populated dynamically from the Firestore `users` collection—keep that roster up to date instead of editing code. Every submitted report must list two different on-duty controllers and can only be approved or rejected by someone other than the author, which the UI and service layer now enforce automatically.
+> **Audit improvements:** Controller dropdowns now read from the Firestore `users` collection—update the roster there instead of editing code. Submitted reports must list two different on-duty controllers and can only be approved or rejected by someone other than the author; both the UI and service layer enforce this automatically.
 
 The application is designed for contributors who prefer declarative HTML and direct Firebase SDK usage, complemented by automated security rules, schema documentation, and emulator-backed tests.
 
@@ -28,7 +28,7 @@ The application is designed for contributors who prefer declarative HTML and dir
 | ---------------- | ------------------------------------------------------------------------------------------------------- |
 | Front-end UI     | Vanilla HTML pages (`index.html`, `dashboard-[role].html`, `report-form.html`) + TailwindCSS via CDN.  |
 | Client logic     | ES modules served directly in the browser (`js/` directory). Key modules: `enhanced-report-service.js`, `user-service.js`, `data-model.js`. |
-| Styling          | TailwindCSS (CDN for local development). Consider migrating to PostCSS or CLI build for production.     |
+| Styling          | Tailwind CSS compiled locally (`pnpm run build:css`) and served from `styles/tailwind.css`.            |
 | Authentication   | Firebase Authentication (Email/Password in production, emulators for tests).                            |
 | Database         | Cloud Firestore (`shiftReports`, `users`, `approvals`, `inboxes`).                                      |
 | Cloud Functions  | Node.js (Firebase Functions) for lifecycle automation, notification fan-out, secured data fan-out.      |
@@ -140,7 +140,23 @@ Controller_Shift-Revamp/
 
    Visit `report-form.html`, `dashboard-controller.html`, or `dashboard-manager.html` after signing in with a seeded account.
 
-6. **Sign in and explore the workflow**
+6. **Build or watch Tailwind CSS**
+
+   The CDN build has been replaced with a local pipeline. For one-off builds run:
+
+   ```bash
+   pnpm run build:css
+   ```
+
+   During active development, start a watcher so changes to HTML/JS regenerate `styles/tailwind.css` automatically:
+
+   ```bash
+   pnpm run dev:css
+   ```
+
+   Leave the watcher running in a separate terminal while you work.
+
+7. **Sign in and explore the workflow**
 
    - Controllers use `report-form.html` to capture shifts, submit for review, and access the accompanying chat via the navbar badge.
    - Managers monitor `dashboard-manager.html`, approve/reject submissions, and open the linked conversation for each report.
@@ -269,7 +285,7 @@ When adding new collection fields or business rules:
 ## Troubleshooting
 
 - **Missing or insufficient permissions** – occurs when client code attempts to read `users` directly. Instead, use `users-listForAssign`.
-- **Tailwind CDN warning** – highlighted in console when using `cdn.tailwindcss.com`. For production, migrate Tailwind to CLI or PostCSS builds.
+- **CSS not updating** – remember to run `pnpm run dev:css` (or `pnpm run build:css`) so the local Tailwind pipeline rebuilds `styles/tailwind.css` after changes.
 - **Deployment permission errors** – ensure your Firebase account has the `Service Account User` role on the project’s App Engine service account.
 - **Undefined `nowIso`** – the helper is exported from `js/utils.js`. Tests ensure it’s loaded; if you see this error, confirm all modules import `nowIso` directly rather than relying on globals.
 

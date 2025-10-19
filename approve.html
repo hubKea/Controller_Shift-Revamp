@@ -5,40 +5,12 @@
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin/>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?display=swap&family=Inter:wght@400;500;700;900&family=Noto+Sans:wght@400;500;700;900"/>
+  <link rel="stylesheet" href="styles/tailwind.css"/>
   <title>Shift Report Review - Thinkers Afrika</title>
   <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,"/>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
-  <style type="text/tailwindcss">
-    :root {
-      --success: #10B981;
-      --warning: #F59E0B;
-      --primary-500: #137fec;
-    }
-    
-    .text-primary-500 {
-      color: var(--primary-500);
-    }
-    
-    .border-primary-500 {
-      border-color: var(--primary-500);
-    }
-
-    #rejection-form {
-      display: none;
-    }
-
-    #rejection-form.active {
-      display: block;
-    }
-
-    .action-button.selected {
-      outline: 2px solid var(--tw-ring-color);
-      outline-offset: 2px;
-    }
-  </style>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
 </head>
-<body class="bg-slate-50 text-gray-800" style='font-family: Inter, "Noto Sans", sans-serif;'>
+<body class="bg-slate-50 text-gray-800">
   <div class="flex flex-col min-h-screen">
     <header class="sticky top-0 z-20 flex items-center justify-between whitespace-nowrap border-b border-neutral-200 bg-neutral-50 px-10 py-3">
       <div class="flex items-center gap-8">

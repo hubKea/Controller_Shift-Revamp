@@ -1,49 +1,15 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="utf-8"/>
-<title>Manager Dashboard - Thinkers Afrika</title>
+  <link rel="stylesheet" href="styles/tailwind.css"/>
+  <title>Manager Dashboard - Thinkers Afrika</title>
 <link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<style type="text/tailwindcss">
-      :root {
-        --foreground-rgb: 13, 20, 27;
-        --background-start-rgb: 243, 244, 246;
-        --background-end-rgb: 243, 244, 246;
-        --primary-color: #137fec;
-        --secondary-color: #6b7280;
-      }
-      body {
-        font-family: 'Inter', sans-serif;
-        color: rgb(var(--foreground-rgb));
-        background: linear-gradient(
-          to bottom,
-          transparent,
-          rgb(var(--background-end-rgb))
-        )
-        rgb(var(--background-start-rgb));
-      }
-      .btn-primary-outline {
-        @apply flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm transition-colors hover:bg-gray-50;
-      }
-      .badge {
-        @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
-      }
-      .badge-green {
-        @apply bg-green-100 text-green-800;
-      }
-      .badge-yellow {
-        @apply bg-yellow-100 text-yellow-800;
-      }
-      .badge-red {
-        @apply bg-red-100 text-red-800;
-      }
-    </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-50 manager-gradient">
 <div class="flex min-h-screen w-full flex-col">
     <header class="sticky top-0 z-20 flex items-center justify-between whitespace-nowrap border-b border-neutral-200 bg-neutral-50 px-10 py-3">
 <div class="flex items-center gap-6">

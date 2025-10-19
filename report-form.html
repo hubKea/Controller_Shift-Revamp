@@ -394,7 +394,7 @@
             try {
               previousHandler(user, role, permissions);
             } catch (error) {
-              console.warn("[messages-nav] previous auth handler failed", error);
+              console.error("[messages-nav] previous auth handler failed", error);
             }
           }
           attachSubscription(user && user.uid ? user.uid : "");
@@ -424,7 +424,6 @@
     import { ROLE_REVIEWER } from './js/constants.js';
     
     // Verify nowIso is loaded
-    console.log('✅ nowIso function loaded:', typeof nowIso === 'function');
     let currentReportId = null;
     let currentReportData = null;
     const generatePdfBtn = document.getElementById('generatePdfBtn');
@@ -815,12 +814,10 @@
     // Use Authentication Guard
     (async () => {
       try {
-        console.log('🛡️ Report Form: Using Authentication Guard...');
         
         const authResult = await userService.initializeAuthGuard();
         
         if (authResult.authenticated) {
-          console.log('✅ Report Form: Authenticated user:', authResult.user.email, 'Role:', authResult.role);
           currentUser = authResult.user;
           currentUserRole = authResult.role;
           
@@ -864,9 +861,7 @@
             userAvatar.style.backgroundImage = `url("https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=137fec&color=fff&size=40")`;
           }
 
-          console.log('Report form initialized for user:', authResult.user.email);
         } else {
-          console.log('❌ Report Form: User not authenticated, auth guard will redirect');
           // Auth guard will handle the redirect
         }
       } catch (error) {

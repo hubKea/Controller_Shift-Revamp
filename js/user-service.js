@@ -60,10 +60,9 @@ class UserService {
       const userDoc = await getDoc(doc(db, 'users', uid));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        console.log('[UserService] User profile found:', userData.email, 'Role:', userData.role);
         return userData;
       } else {
-        console.warn(
+        console.error(
           '[UserService] User profile not found in Firestore, returning default profile'
         );
         // Return default profile without creating in database
@@ -115,16 +114,12 @@ class UserService {
   // Central Authentication Guard - Blocking role check with conditional redirection
   async initializeAuthGuard() {
     return new Promise((resolve) => {
-      console.log('[AuthGuard] Starting...');
-
       onAuthStateChanged(auth, async (user) => {
         try {
           if (!user) {
-            console.log('[AuthGuard] No user authenticated');
             // User not authenticated - redirect to login if not already there
             const currentPage = window.location.pathname.split('/').pop() || 'index.html';
             if (currentPage !== 'index.html') {
-              console.log('[AuthGuard] Redirecting to login...');
               window.location.href = 'index.html';
               return;
             }
@@ -132,13 +127,9 @@ class UserService {
             return;
           }
 
-          console.log('[AuthGuard] User authenticated, fetching role...');
-
           // Fetch user role from Firestore (blocking)
           const userProfile = await this.getUserProfile(user.uid);
           const userRole = userProfile.role;
-
-          console.log('[AuthGuard] Role confirmed:', userRole);
 
           // Store in sessionStorage for quick access
           sessionStorage.setItem('userRole', userRole);
@@ -147,7 +138,6 @@ class UserService {
 
           // Conditional redirection based on role and current page
           const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-          console.log('[AuthGuard] Current page:', currentPage);
 
           let shouldRedirect = false;
           let redirectUrl = '';
@@ -171,12 +161,9 @@ class UserService {
           }
 
           if (shouldRedirect) {
-            console.log('[AuthGuard] Redirecting to correct dashboard:', redirectUrl);
             window.location.href = redirectUrl;
             return;
           }
-
-          console.log('[AuthGuard] User on correct page, proceeding...');
 
           // Update current instance properties
           this.currentUser = user;
@@ -310,7 +297,7 @@ class UserService {
 
       // NOTE: User document creation should be done server-side or by admin
       // Client-side writes are disabled for security
-      console.warn(
+      console.error(
         'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â User created in Auth but profile must be created by admin in Firestore console'
       );
 
@@ -339,7 +326,7 @@ class UserService {
 
   // Update user role (manager function) - DISABLED CLIENT-SIDE WRITES
   async updateUserRole() {
-    console.warn('[UserService] User role updates must be done by admin in Firestore console');
+    console.error('[UserService] User role updates must be done by admin in Firestore console');
     return { success: false, error: 'Client-side user updates are disabled for security' };
   }
 
@@ -379,10 +366,9 @@ class UserService {
   }
 
   // Override this method in your app to handle auth state changes
-  onAuthStateChange(user, role) {
+  onAuthStateChange(/* user, role */) {
     // This will be called whenever authentication state changes
     // Override this method in your main application
-    console.log('Auth state changed:', { user: user?.email, role });
   }
 }
 

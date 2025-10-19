@@ -27,8 +27,6 @@ class App {
   // Initialize the application
   async init() {
     try {
-      console.log('ðŸš€ Initializing Thinkers Afrika Shift Report System...');
-
       // Set up authentication state listener (now blocking)
       await this.setupAuthListener();
 
@@ -36,7 +34,6 @@ class App {
       this.initializeUI();
 
       this.isInitialized = true;
-      console.log('âœ… Application initialized successfully');
     } catch (error) {
       console.error('âŒ Failed to initialize application:', error);
       this.showError('Failed to initialize application. Please refresh the page.');
@@ -45,19 +42,11 @@ class App {
 
   // Set up authentication state listener using central guard
   async setupAuthListener() {
-    console.log('ðŸ“± App: Initializing with Authentication Guard...');
-
     try {
       // Use the central authentication guard as the primary gatekeeper
       const authResult = await userService.initializeAuthGuard();
 
       if (authResult.authenticated) {
-        console.log(
-          'ðŸ“± App: User authenticated via guard:',
-          authResult.user.email,
-          'Role:',
-          authResult.role
-        );
         this.currentUser = authResult.user;
         this.userRole = authResult.role;
         this.userPermissions = authResult.permissions;
@@ -67,10 +56,9 @@ class App {
         this.handlePageLogic();
 
         if (authResult.error) {
-          console.warn('ðŸ“± App: Authentication completed with warning:', authResult.error);
+          console.error('📱 App: Authentication completed with warning:', authResult.error);
         }
       } else {
-        console.log('ðŸ“± App: User not authenticated via guard');
         this.currentUser = null;
         this.userRole = null;
         this.userPermissions = null;
@@ -144,7 +132,6 @@ class App {
         this.handleApprovalPage();
         break;
       default:
-        console.log('ðŸ“„ Unknown page, no specific logic needed');
     }
   }
 
@@ -165,26 +152,22 @@ class App {
   // Handle login page logic
   handleLoginPage() {
     // Don't redirect here - let the login page's own onAuthStateChanged handle it
-    console.log('ðŸ“„ Login page logic - individual page will handle redirects');
   }
 
   // Handle manager dashboard logic
   handleManagerDashboard() {
     // Don't redirect here - let the dashboard page's own onAuthStateChanged handle it
-    console.log('ðŸ‘‘ Manager dashboard logic - individual page will handle redirects');
     this.loadManagerData();
   }
 
   // Handle controller dashboard logic
   handleControllerDashboard() {
     // Don't redirect here - let the dashboard page's own onAuthStateChanged handle it
-    console.log('ðŸŽ® Controller dashboard logic - individual page will handle redirects');
     this.loadControllerData();
   }
 
   // Handle report form logic
   handleReportForm() {
-    console.log('[ReportForm] Page loaded');
     this.populateReportFormControllers();
     this.loadUserReports();
   }
@@ -232,7 +215,7 @@ class App {
       );
 
       if (options.length === 0) {
-        console.warn(
+        console.error(
           '[ReportForm] No active controllers found in Firestore; retaining fallback options.'
         );
         return;
@@ -305,12 +288,10 @@ class App {
   // Handle approval page logic
   handleApprovalPage() {
     if (!this.userPermissions?.canApprove) {
-      console.log('âš ï¸ User cannot approve reports, redirecting to dashboard');
       this.redirectToDashboard();
       return;
     }
 
-    console.log('âœ… Approval page loaded');
     this.loadReportsForApproval();
   }
 
@@ -326,8 +307,6 @@ class App {
   // Load manager dashboard data
   async loadManagerData() {
     try {
-      console.log('ðŸ“Š Loading manager dashboard data...');
-
       // Load all reports
       const reportsResult = await enhancedReportService.getAllReports({ limit: 10 });
       if (reportsResult.success) {
@@ -348,8 +327,6 @@ class App {
   // Load controller dashboard data
   async loadControllerData() {
     try {
-      console.log('ðŸ“Š Loading controller dashboard data...');
-
       // Load user's reports
       const reportsResult = await enhancedReportService.getUserReports({ limit: 10 });
       if (reportsResult.success) {

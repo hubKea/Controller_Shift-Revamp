@@ -18,32 +18,24 @@ microsoftProvider.setCustomParameters({
 let redirectInProgress = false;
 
 onAuthStateChanged(auth, async (user) => {
-  console.log('🔍 onAuthStateChanged triggered on login page:', user ? user.email : 'null');
-
   if (user && !redirectInProgress) {
-    console.log('✅ User already authenticated:', user.email);
     redirectInProgress = true;
 
     try {
       // Get user role and redirect
       const userRole = await userService.getUserRole(user.uid);
-      console.log('👤 User role:', userRole);
 
       if (userRole === ROLE_MANAGER) {
-        console.log('🚀 Redirecting to manager dashboard...');
         window.location.href = 'dashboard-manager.html';
       } else {
-        console.log('🚀 Redirecting to controller dashboard...');
         window.location.href = 'dashboard-controller.html';
       }
     } catch (error) {
       console.error('❌ Error getting user role:', error);
       // If there's an error getting the role, still redirect to controller dashboard
-      console.log('🚀 Redirecting to controller dashboard (fallback)...');
       window.location.href = 'dashboard-controller.html';
     }
   } else if (!user) {
-    console.log('❌ No user authenticated, staying on login page');
     redirectInProgress = false;
   }
 });
@@ -52,8 +44,7 @@ onAuthStateChanged(auth, async (user) => {
 document.getElementById('microsoftSignIn').addEventListener('click', async () => {
   try {
     showLoading('Signing in with Microsoft 365...');
-    const result = await signInWithPopup(auth, microsoftProvider);
-    console.log('Microsoft sign-in successful:', result.user);
+    await signInWithPopup(auth, microsoftProvider);
 
     // Don't redirect here - let onAuthStateChanged handle it
     hideLoading();

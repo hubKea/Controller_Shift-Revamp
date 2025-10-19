@@ -227,7 +227,7 @@ function selectConversation(conversationId) {
   }
 
   markConversationRead(conversationId, state.currentUser.uid).catch((error) => {
-    console.warn('[messages-page] Failed to mark conversation read', error);
+    console.error('[messages-page] Failed to mark conversation read', error);
   });
 
   detachMessagesSubscription();

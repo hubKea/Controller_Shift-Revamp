@@ -181,7 +181,7 @@ Filters active
           try {
             previousHandler(user, role, permissions);
           } catch (error) {
-            console.warn("[messages-nav] previous auth handler failed", error);
+            console.error("[messages-nav] previous auth handler failed", error);
           }
         }
         attachSubscription(user && user.uid ? user.uid : "");

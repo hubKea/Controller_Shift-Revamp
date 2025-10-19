@@ -413,7 +413,8 @@ export class DashboardBase {
     };
 
     const toast = document.createElement("div");
-    toast.className = ixed top-4 right-4 z-50  text-white px-4 py-2 rounded-lg shadow-lg;
+    toast.className = 
+ixed top-4 right-4 z-50  text-white px-4 py-2 rounded-lg shadow-lg;
     toast.textContent = message;
     document.body.appendChild(toast);
 
@@ -511,7 +512,7 @@ export class DashboardBase {
       try {
         unsubscribe?.();
       } catch (error) {
-        console.warn("Failed to detach listener", error);
+        console.error("Failed to detach listener", error);
       }
     });
     this.reportListeners = [];
@@ -734,7 +735,6 @@ export class DashboardManager extends DashboardBase {
     }
 
     if (normalizedStatuses.length > 10) {
-      console.warn("Status filter limited to first 10 values.");
     }
 
     const hasSearch = Boolean(filters.search);

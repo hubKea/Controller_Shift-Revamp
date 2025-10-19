@@ -112,7 +112,6 @@ class EnhancedReportService {
 
       const docRef = await addDoc(collection(db, this.reportsCollection), reportData);
 
-      console.log('Report created successfully:', docRef.id, 'at', clientTimestampIso);
       return {
         success: true,
         reportId: docRef.id,
@@ -171,7 +170,6 @@ class EnhancedReportService {
       // Update the report
       await updateDoc(doc(db, this.reportsCollection, reportId), updateData);
 
-      console.log('Report updated successfully:', reportId, 'at', clientTimestampIso);
       return { success: true, data: updateData, savedAt: clientTimestampIso };
     } catch (error) {
       console.error('Update report error:', error);
@@ -250,7 +248,6 @@ class EnhancedReportService {
 
       await updateDoc(doc(db, this.reportsCollection, reportId), updateData);
 
-      console.log('Report submitted successfully:', reportId, 'at', clientTimestampIso);
       return { success: true, savedAt: clientTimestampIso };
     } catch (error) {
       console.error('Submit report error:', error);
@@ -460,7 +457,6 @@ class EnhancedReportService {
       // Create separate approval document (optional)
       await this.createApprovalDocument(reportId, approval, report.data);
 
-      console.log('Report approved successfully:', reportId, 'at', clientTimestampIso);
       return { success: true, savedAt: clientTimestampIso };
     } catch (error) {
       console.error('Approve report error:', error);
@@ -529,7 +525,6 @@ class EnhancedReportService {
       // Create separate approval document (optional)
       await this.createApprovalDocument(reportId, approval, report.data);
 
-      console.log('Report rejected successfully:', reportId, 'at', clientTimestampIso);
       return { success: true, savedAt: clientTimestampIso };
     } catch (error) {
       console.error('Reject report error:', error);
@@ -561,7 +556,6 @@ class EnhancedReportService {
 
       await deleteDoc(doc(db, this.reportsCollection, reportId));
 
-      console.log('Report deleted successfully:', reportId);
       return { success: true };
     } catch (error) {
       console.error('Delete report error:', error);

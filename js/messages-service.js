@@ -19,11 +19,9 @@ import { db } from '../firebase-config.js';
  */
 export function subscribeUserConversations(userId, callback) {
   if (typeof userId !== 'string' || !userId.trim()) {
-    console.warn('[messages-service] subscribeUserConversations requires a userId');
     return () => {};
   }
   if (typeof callback !== 'function') {
-    console.warn('[messages-service] subscribeUserConversations requires a callback function');
     return () => {};
   }
 
@@ -42,7 +40,7 @@ export function subscribeUserConversations(userId, callback) {
       callback(items);
     },
     (error) => {
-      console.warn('[messages-service] Failed to subscribe to conversations', error);
+      console.error('[messages-service] Failed to subscribe to conversations', error);
       callback([]);
     }
   );
@@ -56,11 +54,9 @@ export function subscribeUserConversations(userId, callback) {
  */
 export function subscribeConversationMessages(conversationId, callback) {
   if (typeof conversationId !== 'string' || !conversationId.trim()) {
-    console.warn('[messages-service] subscribeConversationMessages requires a conversationId');
     return () => {};
   }
   if (typeof callback !== 'function') {
-    console.warn('[messages-service] subscribeConversationMessages requires a callback function');
     return () => {};
   }
 
@@ -74,7 +70,7 @@ export function subscribeConversationMessages(conversationId, callback) {
       callback(items);
     },
     (error) => {
-      console.warn('[messages-service] Failed to subscribe to messages', error);
+      console.error('[messages-service] Failed to subscribe to messages', error);
       callback([]);
     }
   );
@@ -142,7 +138,7 @@ export async function markConversationRead(conversationId, userId) {
       [`unreadCount.${normalizedUid}`]: 0,
     });
   } catch (error) {
-    console.warn('[messages-service] Failed to mark conversation read', error);
+    console.error('[messages-service] Failed to mark conversation read', error);
     throw error;
   }
 }

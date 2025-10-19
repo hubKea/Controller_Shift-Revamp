@@ -15,6 +15,8 @@
 - **Gontle Ditibane** - gontle@thinkersafrika.co.za
 - **Kabelo Tshabalala** - kabelo@thinkersafrika.co.za
 
+> The application pulls controller/manager options straight from the Firestore `users` collection. When team members change, add or disable accounts here—no code edits are required.
+
 ## Quick Setup Steps
 
 ### Option 1: Manual Setup (Recommended)
@@ -94,7 +96,7 @@
 - All users have `canApprove: true` (controllers can review reports)
 - Only manager has `canViewAll: true` and `canManageUsers: true`
 - Users can only edit their own draft reports
-- Users can review any submitted report
+- Controllers only see review queues where they are assigned as the incoming controller (`controller2Id`), and must approve a teammate’s report (self-approvals/rejections are blocked in the UI and service layer)
 - Manager can view and manage everything
 
 ## Real-time Messaging Overview

@@ -26,14 +26,16 @@ The application is designed for contributors who prefer declarative HTML and dir
 
 | Layer            | Technology / Notes                                                                                     |
 | ---------------- | ------------------------------------------------------------------------------------------------------- |
-| Front-end UI     | Vanilla HTML pages (`index.html`, `dashboard-[role].html`, `report-form.html`) + TailwindCSS via CDN.  |
+| Front-end UI     | Vanilla HTML pages (`index.html`, `dashboard-[role].html`, `report-form.html`) styled with the locally built Tailwind bundle. |
 | Client logic     | ES modules served directly in the browser (`js/` directory). Key modules: `enhanced-report-service.js`, `user-service.js`, `data-model.js`. |
-| Styling          | Tailwind CSS compiled locally (`pnpm run build:css`) and served from `styles/tailwind.css`.            |
+| Styling          | Tailwind CSS compiled locally via the Tailwind CLI/PostCSS pipeline (`pnpm run build:css` / `pnpm run dev:css`) with output in `styles/tailwind.css`. |
 | Authentication   | Firebase Authentication (Email/Password in production, emulators for tests).                            |
 | Database         | Cloud Firestore (`shiftReports`, `users`, `approvals`, `inboxes`).                                      |
 | Cloud Functions  | Node.js (Firebase Functions) for lifecycle automation, notification fan-out, secured data fan-out.      |
-| Security         | Firestore rules guard reads/writes by role and ownership. Cloud Functions further enforce workflows.    |
+| Security         | Firestore rules gate roster access and report edits by role; Cloud Functions issue approval tokens, post inbox updates, and enforce reviewer workflows. |
 | Tooling          | Node.js + pnpm for scripting, Firebase CLI for deployment, Jest + Firestore Emulator for tests.         |
+
+Tailwind source files live in `src/tailwind.css`, and the generated bundle is committed at `styles/tailwind.css`. Run `pnpm run build:css` for a fresh build or `pnpm run dev:css` while developing to keep the stylesheet up to date. Controller and reviewer dropdowns call the `users-listForAssign` Cloud Function, so keep the Firestore `users` collection current (set `isActive: true` for anyone who should appear).
 
 ### Key modules
 
@@ -43,7 +45,7 @@ The application is designed for contributors who prefer declarative HTML and dir
   - Manages inbox notifications for review requests (`review_request`) and decisions (`review_decision`).
   - Exposes callable utilities (e.g., `users-listForAssign`) so the client can safely populate dropdowns without broad Firestore reads.
 - **`report-form.html`** – the controller-focused UI for editing reports. It connects to authentication guards, calls callable functions to populate controllers/reviewers, and posts back to Firestore via the service layer.
-- **`SCHEMA.md`** – the canonical description of structured documents (`inboxes/{uid}/items/{notificationId}`) and their fields.
+- **`SCHEMA.md`** - canonical reference for Firestore collections (`users`, `shiftReports`, `approvals`, `inboxes`, and related messaging docs).
 - **`USER_SETUP_GUIDE.md`** – step-by-step instructions for seeding user accounts in Firebase Authentication/Firestore.
 
 ## Repository Structure
@@ -142,7 +144,7 @@ Controller_Shift-Revamp/
 
 6. **Build or watch Tailwind CSS**
 
-   The CDN build has been replaced with a local pipeline. For one-off builds run:
+   The CDN build has been replaced with a local Tailwind CLI/PostCSS pipeline that writes to `styles/tailwind.css` (the file served by every HTML page). For one-off builds run:
 
    ```bash
    pnpm run build:css
@@ -239,6 +241,8 @@ firebase deploy --only functions,firestore:rules,firestore:indexes
 
 > **Migration note:** In-app messaging replaces legacy email notifications. Deploying the latest `functions` bundle and Firestore rules is required to enable conversations and unread badges in production.
 
+When shipping static assets (Firebase Hosting or other hosting provider), run `pnpm run build:css` first so the committed `styles/tailwind.css` reflects the latest Tailwind changes.
+
 ### Firestore rules and indexes
 
 - `firestore.rules` enforces role-based access (controllers read their own data; managers have extended privileges; inbox writes require Cloud Functions).
@@ -258,8 +262,8 @@ Deploying functions requires `iam.serviceAccounts.ActAs` permission on the defau
 
 ## Data Model and User Provisioning
 
-- **SCHEMA.md** documents the inbox collection (`inboxes/{uid}/items/{notificationId}`) and the structure of notification payloads. Consult this when adding new notification types.
-- **USER_SETUP_GUIDE.md** explains how to create initial Firebase Auth users, assign roles, and set permissions.
+- **SCHEMA.md** documents the Firestore layout: user records, shift reports, approval snapshots, inbox notifications, and the messaging collections.
+- **USER_SETUP_GUIDE.md** explains how to create Firebase Auth users, seed the matching Firestore documents (`displayName`, `email`, `isActive`, role permissions), and keep the roster synchronized.
 - **js/data-model.js** contains the aggregate shift report schema mapping so both client and server understand expected fields.
 
 When adding new collection fields or business rules:
@@ -292,7 +296,8 @@ When adding new collection fields or business rules:
 ## Additional Resources
 
 - [USER_SETUP_GUIDE.md](./USER_SETUP_GUIDE.md) – create and configure controller/manager accounts.
-- [SCHEMA.md](./SCHEMA.md) – reference for Firestore structures and notification payloads.
+- [SCHEMA.md](./SCHEMA.md) - Firestore collection reference covering users, shift reports, approvals, inboxes, and notification metadata.
+- [docs/SCHEMA-MESSAGES.md](./docs/SCHEMA-MESSAGES.md) - detailed layout for conversations and chat messages.
 - [Firebase Security Rules](./firestore.rules) – keep these in sync with application logic.
 - [Firebase Indexes](./firestore.indexes.json) – required composite indexes.
 

@@ -1,132 +1,150 @@
 # User Setup Guide - Thinkers Afrika
 
-## Team Members
+## Overview
 
-### Manager
-- **Vincent Mogashoa** - vincent@thinkersafrika.co.za
-  - Role: Manager
-  - Permissions: All (can approve, view all reports, manage users)
+- Controller and reviewer dropdowns use the `users-listForAssign` callable Cloud Function. It returns active Firestore user documents, so keeping the `users` collection accurate is the only way to update the roster.
+- Each document in `users/{uid}` must include both `displayName` and `email`. The dropdown label comes from `displayName` and the callable falls back to `email` when no friendly name is available.
+- Toggle the roster by editing Firestore; no HTML changes are required. Set `isActive: false` to hide someone from all dropdowns without deleting their account.
 
-### Controllers (All can review reports)
-- **Kea Maripane** - keamogetswe@thinkersafrika.co.za
-- **Sipho Mahlinza** - control@thinkersafrika.co.za
-- **John Macharaga** - john@thinkersafrika.co.za
-- **Matshidiso Maake** - matshidiso@thinkersafrika.co.za
-- **Gontle Ditibane** - gontle@thinkersafrika.co.za
-- **Kabelo Tshabalala** - kabelo@thinkersafrika.co.za
+## Manual Setup (recommended)
 
-> The application pulls controller/manager options straight from the Firestore `users` collection. When team members change, add or disable accounts here—no code edits are required.
+1. Open **Firebase Console -> Authentication -> Users** and create the account.
+   - Enter the email address and a temporary password. Inform the user to change it at first sign-in.
+   - Supply the display name so it propagates to the Auth profile.
+2. Copy the new user's **UID** from the Auth record.
+3. Open **Firestore Database -> Data**.
+   - Create (or select) the `users` collection.
+   - Add a document whose ID exactly matches the Firebase Auth UID.
+   - Populate the fields listed in [_Required fields_](#required-fields), using the role presets below.
+   - Use the console's _Server timestamp_ option for `createdAt` and `updatedAt`; the callable and security rules expect authoritative timestamps.
+4. Repeat for each controller, reviewer, and manager.
 
-## Quick Setup Steps
+To deactivate an account later, leave the Auth record in place but set `isActive` to `false`. The callable skips inactive users and the UI hides them.
 
-### Option 1: Manual Setup (Recommended)
+## Automated seeding (optional)
 
-1. **Go to Firebase Console** → Authentication → Users
-2. **Add each user manually:**
-   - Click "Add user"
-   - Enter email address
-   - Enter temporary password (user will change on first login)
-   - Click "Add user"
+`create-users.js` can bootstrap the roster inside a development environment:
 
-3. **Set up user roles in Firestore:**
-   - Go to Firestore Database → Data
-   - Create collection: `users`
-   - For each user, create document with their UID as document ID
-   - Copy the JSON structure from below
+1. Serve the application locally, sign in as an admin/manager, and open the browser console.
+2. Paste the contents of `create-users.js`.
+3. Run `createAllUsers()` to create the Auth users and companion Firestore documents.
 
-### Option 2: Automated Setup
+Update the email list and temporary passwords in the script before running it, and delete or rotate any placeholder passwords afterwards. The script is intended for emulator/testing environments; for production, prefer the manual approach so you can validate each UID and permission.
 
-1. **Open your application in browser**
-2. **Open browser console (F12)**
-3. **Copy and paste the contents of `create-users.js`**
-4. **Run: `createAllUsers()`**
+## Required fields
 
-## User Document Structure
+Every document in `users/{uid}` must include the following keys:
 
-### Manager (Vincent)
+| Field | Type | Notes |
+| ----- | ---- | ----- |
+| `email` | string | Lowercase email address. Used for login, dropdown fallback, and audit logs. |
+| `displayName` | string | Friendly name shown in dropdowns and messages. |
+| `role` | string | One of `manager`, `controller`, or `reviewer`. |
+| `permissions` | map | Boolean flags listed in the preset table below. |
+| `isActive` | boolean | `true` keeps the user selectable; `false` hides them. |
+| `assignedSites` | array<string> | Optional list of site IDs. Leave empty (`[]`) if not used. |
+| `createdAt` | timestamp | Server timestamp when the profile was added. |
+| `updatedAt` | timestamp | Server timestamp of the latest profile change. |
+
+Additional optional fields (phone number, job title, etc.) can be added as needed. Keep them flat or add nested maps as appropriate; the callable only reads `email`, `displayName`, `role`, and `isActive`.
+
+### Permission presets
+
+| Role | `canApprove` | `canViewAll` | `canManageUsers` | `canCreateReports` |
+| ---- | ------------ | ------------ | ---------------- | ------------------ |
+| `manager` | true | true | true | true |
+| `controller` | true | false | false | true |
+| `reviewer` (optional) | true | false | false | false |
+
+Set additional flags as required by future features (for example `canViewAllReports` if added later), but keep the four booleans above in sync with the current security rules.
+
+### Example documents
+
+Manager:
+
 ```json
 {
-  "uid": "vincent_uid_from_auth",
   "email": "vincent@thinkersafrika.co.za",
   "displayName": "Vincent Mogashoa",
   "role": "manager",
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T00:00:00.000Z",
   "isActive": true,
   "assignedSites": [],
   "permissions": {
     "canApprove": true,
     "canViewAll": true,
-    "canManageUsers": true
-  }
+    "canManageUsers": true,
+    "canCreateReports": true
+  },
+  "createdAt": "serverTimestamp()",
+  "updatedAt": "serverTimestamp()"
 }
 ```
 
-### Controllers (All others)
+Controller:
+
 ```json
 {
-  "uid": "user_uid_from_auth",
-  "email": "user@thinkersafrika.co.za",
-  "displayName": "User Name",
+  "email": "keamogetswe@thinkersafrika.co.za",
+  "displayName": "Kea Maripane",
   "role": "controller",
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T00:00:00.000Z",
   "isActive": true,
   "assignedSites": [],
   "permissions": {
     "canApprove": true,
     "canViewAll": false,
-    "canManageUsers": false
-  }
+    "canManageUsers": false,
+    "canCreateReports": true
+  },
+  "createdAt": "serverTimestamp()",
+  "updatedAt": "serverTimestamp()"
 }
 ```
 
-## Testing
+Replace `"serverTimestamp()"` with the Firestore console's server timestamp option or the Admin SDK equivalent.
 
-1. **Sign-in validation** – confirm each seeded account can authenticate and lands on the correct dashboard.
-2. **Report workflow** – create a draft, submit for review, approve/reject from the manager dashboard.
-3. **Messaging checks**
-   - Watch the navbar badge increase when a report is submitted and when new chat messages arrive.
-   - Open `messages.html` and verify the conversation stream, unread counters, and ability to reply.
-   - Ensure mark-as-read clears the badge for the current user.
-4. **Emulator smoke test** – run `pnpm emulator:start` to exercise the Firestore emulator locally before deploying to production.
+## Verification checklist
 
-## Security Notes
+- Sign in with each seeded account and confirm the correct dashboard loads.
+- Open `report-form.html` and make sure both controller dropdowns list only active users with display names and that the roster updates after toggling `isActive`.
+- Submit a report, then approve or reject it from the manager dashboard to confirm reviewer permissions and Cloud Functions workflows.
+- Visit `messages.html` to ensure conversation participants match the report's controllers and decision makers. Unread badges should update when messages are read.
+- When developing locally, run `pnpm emulator:start` to validate the workflow against the Firestore emulator before deploying.
 
-- All users have `canApprove: true` (controllers can review reports)
-- Only manager has `canViewAll: true` and `canManageUsers: true`
-- Users can only edit their own draft reports
-- Controllers only see review queues where they are assigned as the incoming controller (`controller2Id`), and must approve a teammate’s report (self-approvals/rejections are blocked in the UI and service layer)
-- Manager can view and manage everything
+## Security notes
 
-## Real-time Messaging Overview
+- Firestore rules restrict direct edits to `users` documents. Managers can update profiles; other roles are read-only. Client-side scripts should never bypass this.
+- Controllers, reviewers, and managers all have `canApprove: true` so the callable can surface them for review assignments, but Cloud Functions prevent self-approval by validating tokens and comparing UIDs.
+- Reports list two different controllers (`controller1Id` and `controller2Id`). Ensure the roster contains distinct UIDs so the UI can enforce unique selections.
+- Deactivate dormant accounts (`isActive: false`) instead of deleting them; historical approvals reference reviewer UIDs.
 
-- Every submitted report spins up a conversation document (`conversations/{reportId}`) containing the controllers on duty and all managers with approval permissions.
-- The conversation powers the unread badge in the navbar and the dedicated `messages.html` workspace. Controllers see a “View chat” link immediately after submitting a report; managers have an “Open chat” action beside each report row.
-- Cloud Functions append system messages when reports are submitted, approved, or rejected. Unread counters are updated automatically for all participants except the sender.
-- Firestore security rules restrict read/write access to the `participants` array. Clients can only reset their own unread counter via `markConversationRead`.
-- Required index: participants `array-contains` + `lastMessageAt` descending (included in `firestore.indexes.json`). Deploy indexes alongside rules after pulling the latest code.
+## Real-time messaging overview
 
-## Password Policy
+- Each submitted report creates (or reuses) a conversation document at `conversations/{reportId}` containing the controllers on duty and every user with `permissions.canApprove === true`.
+- Cloud Functions append system messages for submissions, approvals, and rejections, and maintain unread counters in `unreadCount.{uid}`.
+- The navbar badge aggregates unread items across conversations. `messages.html` lets each participant drill into conversations and resets their unread counter via `markConversationRead`.
+- Keep the composite index `participants array-contains` + `lastMessageAt desc` deployed (`firestore.indexes.json` already includes it).
 
-**Recommended temporary passwords:**
-- Use format: `FirstName2024!`
-- Example: `Vincent2024!`, `Kea2024!`, etc.
-- Users should change passwords on first login
+## Password policy
+
+- Issue temporary passwords using the `FirstName2024!` pattern (for example `Vincent2024!`).
+- Require users to set a new password immediately after their first login.
 
 ## Troubleshooting
 
-### User can't login
-- Check if user exists in Firebase Authentication
-- Verify email address is correct
-- Check if user document exists in Firestore
+### User cannot sign in
+
+- Confirm the Auth user exists and the email matches the Firestore document.
+- Verify `isActive` is `true` and permissions are populated.
+- Check browser console and Firebase auth logs for error codes.
 
 ### Permission denied errors
-- Verify user document has correct permissions
-- Check Firestore security rules are deployed
-- Ensure user role is set correctly
 
-### User sees wrong dashboard
-- Check user role in Firestore document
-- Verify permissions object is correct
-- Clear browser cache and try again
+- Ensure Firestore rules are deployed (`firebase deploy --only firestore:rules`).
+- Confirm the Firestore document uses the correct UID and role.
+- Re-run the emulators locally (`pnpm emulator:start`) to reproduce the issue with verbose logging.
+
+### Wrong dashboard after login
+
+- Verify the user's `role` and `permissions` map in Firestore.
+- Clear local storage/session storage and sign in again.
+- If testing with multiple roles in the same browser, use separate profiles or private windows to avoid cached state.

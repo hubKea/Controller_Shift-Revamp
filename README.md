@@ -37,10 +37,18 @@ The application is designed for contributors who prefer declarative HTML and dir
 
 Tailwind source files live in `src/tailwind.css`, and the generated bundle is committed at `styles/tailwind.css`. Run `pnpm run build:css` for a fresh build or `pnpm run dev:css` while developing to keep the stylesheet up to date. Controller and reviewer dropdowns call the `users-listForAssign` Cloud Function, so keep the Firestore `users` collection current (set `isActive: true` for anyone who should appear).
 
+### Accessibility & UX
+
+- **Skip to Content link** – Every page exposes a keyboard-visible “Skip to main content” anchor that jumps directly to `#main`, improving efficiency for screen-reader and keyboard users.
+- **Focus-visible styling** – Global `:focus-visible` outlines ensure links, buttons, and form controls retain a consistent high-contrast focus ring (even when Tailwind classes are customised elsewhere).
+- **Focus-trapped dropdowns** – The notifications and messages menus read from Firestore (`inboxes/{uid}/items`), keep focus within the popover until dismissed, support <kbd>Esc</kbd> to close, and restore focus to the triggering button when finished (read/unread state updates in real time).
+- **Reduced motion** – Animations honour the user’s `prefers-reduced-motion` setting; test this by toggling the OS accessibility preference or using Chrome DevTools → Rendering → “Emulate CSS prefers-reduced-motion”.
+- **Lighthouse** – Run an accessibility audit via Chrome DevTools (Lighthouse tab) or `npx lighthouse http://localhost:5000 --only-categories=accessibility`; the project should score ≥ 95 when the main dashboard is served locally.
+
 ### Key modules
 
-- **`js/enhanced-report-service.js`** – the controller-facing abstraction for creating, updating, submitting, approving, and rejecting reports. It wraps Firestore calls, validates data against the schema, and makes sure authoritative timestamps are written.
-- **`functions/index.js`** – back-end logic that:
+- **`js/enhanced-report-service.js`** - the controller-facing abstraction for creating, updating, submitting, approving, and rejecting reports. It wraps Firestore calls, validates data against the schema, and makes sure authoritative timestamps are written.
+- **`functions/index.js`** - back-end logic that:
   - Normalises reviewer tokens, handles approval/ rejection flows coming from Cloud Functions.
   - Manages inbox notifications for review requests (`review_request`) and decisions (`review_decision`).
   - Exposes callable utilities (e.g., `users-listForAssign`) so the client can safely populate dropdowns without broad Firestore reads.

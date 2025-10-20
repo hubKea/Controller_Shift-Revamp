@@ -110,6 +110,12 @@ Replace `"serverTimestamp()"` with the Firestore console's server timestamp opti
 - Visit `messages.html` to ensure conversation participants match the report's controllers and decision makers. Unread badges should update when messages are read.
 - When developing locally, run `pnpm emulator:start` to validate the workflow against the Firestore emulator before deploying.
 
+## Notifications
+
+- In-app notifications surface via the header bell and are stored in Firestore at `inboxes/{uid}/items` for each signed-in user.
+- Marking a notification as read only clears it for that user; teammates with the same item keep their unread badge until they open it.
+- Email is not sent automatically—ensure staff know to monitor the bell and conversations feed for review activity.
+
 ## Security notes
 
 - Firestore rules restrict direct edits to `users` documents. Managers can update profiles; other roles are read-only. Client-side scripts should never bypass this.

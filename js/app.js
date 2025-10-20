@@ -1,7 +1,7 @@
 // Main Application Script - Thinkers Afrika Shift Report System
 // Handles authentication, role management, and application initialization
 
-import { db } from '../firebase-config.js';
+import { auth, db } from '../firebase-config.js';
 import { userService } from './user-service.js';
 import { enhancedReportService } from './enhanced-report-service.js';
 import { ROLE_CONTROLLER, ROLE_MANAGER } from './constants.js';
@@ -11,6 +11,8 @@ import {
   query,
   where,
 } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+import { initNotificationsMenu } from '../web/js/notifications-menu.js';
+import { initMessagesMenu } from '../web/js/messages-menu.js';
 
 class App {
   constructor() {
@@ -19,6 +21,9 @@ class App {
     this.userPermissions = null;
     this.isInitialized = false;
     this.reportFormControllersLoaded = false;
+
+    initNotificationsMenu(auth, db);
+    initMessagesMenu();
 
     // Initialize the application
     this.init();
@@ -670,9 +675,25 @@ class App {
 
     // Set up navigation
     this.setupNavigation();
+    this.applyActiveNav();
 
     // Set up form handlers
     this.setupFormHandlers();
+  }
+
+  applyActiveNav() {
+    const activeNav = document.body?.dataset?.activeNav || '';
+    if (!activeNav) {
+      return;
+    }
+    const navLinks = document.querySelectorAll('[data-nav]');
+    navLinks.forEach((link) => {
+      if (link.dataset.nav === activeNav) {
+        link.setAttribute('aria-current', 'page');
+      } else {
+        link.removeAttribute('aria-current');
+      }
+    });
   }
 
   // Set up logout functionality

@@ -15,14 +15,22 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles/tailwind.css" />
+    <link rel="stylesheet" href="styles/a11y.css" />
     <title>Controller Shift Report - Thinkers Afrika</title>
     <link href="data:image/x-icon;base64," rel="icon" type="image/x-icon" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.14/jspdf.plugin.autotable.min.js"></script>
   </head>
-  <body class="bg-neutral-50 text-neutral-800">
+  <body class="bg-neutral-50 text-neutral-800" data-active-nav="dashboard">
+    <a
+      href="#main"
+      class="sr-only focus:not-sr-only focus:fixed focus:z-50 focus:top-2 focus:left-2 focus:bg-white focus:text-black focus:px-3 focus:py-2 focus:rounded"
+    >
+      Skip to main content
+    </a>
     <div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
       <header
+        role="banner"
         class="sticky top-0 z-20 flex items-center justify-between whitespace-nowrap border-b border-neutral-200 bg-neutral-50 px-10 py-3"
       >
         <div class="flex items-center gap-8">
@@ -36,9 +44,10 @@
             </div>
             <h1 class="text-xl font-bold">Thinkers Afrika</h1>
           </div>
-          <nav class="flex items-center gap-6">
+          <nav class="flex items-center gap-6" role="navigation" aria-label="Primary navigation">
             <a
               data-dashboard-link="dashboard"
+              data-nav="dashboard"
               class="text-sm font-bold text-primary-500 border-b-2 border-primary-500 pb-1"
               href="#"
               >Dashboard</a
@@ -46,25 +55,54 @@
           </nav>
         </div>
         <div class="flex items-center gap-4">
-          <button
-            id="messagesButton"
-            type="button"
-            class="relative flex h-10 w-10 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            aria-label="Messages"
-          >
-            <span class="material-symbols-outlined">chat</span>
-            <span
-              id="messagesUnreadBadge"
-              class="pointer-events-none absolute -top-1.5 -right-1.5 hidden min-w-[1.5rem] rounded-full bg-red-500 px-1.5 py-0.5 text-center text-xs font-semibold leading-none text-white"
-              aria-live="polite"
-              aria-atomic="true"
-            ></span>
-          </button>
-          <button
-            class="relative rounded-full p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"
-          >
-            <span class="material-symbols-outlined"> notifications </span>
-          </button>
+          <div class="relative">
+            <button
+              id="messagesButton"
+              type="button"
+              class="relative flex h-10 w-10 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              aria-label="Messages"
+              aria-haspopup="menu"
+              aria-expanded="false"
+              aria-controls="messages-menu"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">chat</span>
+              <span
+                id="messagesUnreadBadge"
+                class="pointer-events-none absolute -top-1.5 -right-1.5 hidden min-w-[1.5rem] rounded-full bg-red-500 px-1.5 py-0.5 text-center text-xs font-semibold leading-none text-white"
+                aria-live="polite"
+                aria-atomic="true"
+              ></span>
+            </button>
+            <div
+              id="messages-menu"
+              class="absolute right-full z-30 mr-3 hidden w-72 md:right-0 md:mr-0 md:mt-3"
+              hidden
+            ></div>
+          </div>
+          <div class="relative">
+            <button
+              id="btn-notifications"
+              type="button"
+              class="relative flex h-10 w-10 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              aria-label="Notifications"
+              aria-haspopup="menu"
+              aria-expanded="false"
+              aria-controls="notifications-menu"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">notifications</span>
+              <span
+                id="notifications-unread-badge"
+                class="pointer-events-none absolute -top-1.5 -right-1.5 hidden min-w-[1.5rem] rounded-full bg-red-500 px-1.5 py-0.5 text-center text-xs font-semibold leading-none text-white"
+                aria-live="polite"
+                aria-atomic="true"
+              ></span>
+            </button>
+            <div
+              id="notifications-menu"
+              class="absolute right-0 z-30 mt-3 hidden w-80"
+              hidden
+            ></div>
+          </div>
           <div
             class="h-10 w-10 rounded-full bg-cover bg-center"
             style="
@@ -74,7 +112,7 @@
         </div>
       </header>
 
-      <main class="flex-1 bg-neutral-100 px-10 py-8">
+      <main id="main" role="main" class="flex-1 bg-neutral-100 px-10 py-8">
         <div class="mx-auto max-w-7xl">
           <!-- Message Box -->
           <div id="message-box" class="hidden"></div>
@@ -588,87 +626,7 @@
     <script type="module" src="js/app.js"></script>
     <script type="module">
       import { userService } from './js/user-service.js';
-      import { subscribeUserConversations } from './js/messages-service.js';
-      import { ROLE_CONTROLLER, ROLE_MANAGER } from './js/constants.js';
-
-      const messagesButton = document.getElementById('messagesButton');
-      const unreadBadge = document.getElementById('messagesUnreadBadge');
-
-      if (messagesButton && unreadBadge) {
-        const navigateToMessages = () => {
-          window.location.href = 'messages.html';
-        };
-
-        messagesButton.addEventListener('click', navigateToMessages);
-        messagesButton.addEventListener('keydown', (event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            navigateToMessages();
-          }
-        });
-
-        const updateBadge = (totalUnread) => {
-          if (totalUnread > 0) {
-            unreadBadge.textContent = String(totalUnread);
-            unreadBadge.classList.remove('hidden');
-          } else {
-            unreadBadge.textContent = '';
-            unreadBadge.classList.add('hidden');
-          }
-        };
-
-        let unsubscribe = null;
-
-        const attachSubscription = (uid) => {
-          if (unsubscribe) {
-            unsubscribe();
-            unsubscribe = null;
-          }
-          if (!uid) {
-            updateBadge(0);
-            return;
-          }
-          unsubscribe = subscribeUserConversations(uid, (conversations) => {
-            const total = Array.isArray(conversations)
-              ? conversations.reduce((acc, conversation) => {
-                  const count = conversation?.unreadCount?.[uid];
-                  return acc + (typeof count === 'number' ? count : 0);
-                }, 0)
-              : 0;
-            updateBadge(total);
-          });
-        };
-
-        const previousHandler =
-          typeof userService.onAuthStateChange === 'function'
-            ? userService.onAuthStateChange.bind(userService)
-            : null;
-
-        userService.onAuthStateChange = (user, role, permissions) => {
-          if (typeof previousHandler === 'function') {
-            try {
-              previousHandler(user, role, permissions);
-            } catch (error) {
-              console.error('[messages-nav] previous auth handler failed', error);
-            }
-          }
-          attachSubscription(user && user.uid ? user.uid : '');
-        };
-
-        const current =
-          typeof userService.getCurrentUser === 'function' ? userService.getCurrentUser() : null;
-        if (current?.isAuthenticated && current.user?.uid) {
-          attachSubscription(current.user.uid);
-        }
-
-        window.addEventListener('beforeunload', () => {
-          if (typeof unsubscribe === 'function') {
-            unsubscribe();
-            unsubscribe = null;
-          }
-        });
-      }
-    </script>
+      
 
     <script type="module">
       // Firebase and utilities imports

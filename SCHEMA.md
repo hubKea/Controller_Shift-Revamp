@@ -162,6 +162,7 @@ Notification items (`inboxes/{uid}/items/{notificationId}`):
 | `actorId` / `actorName` | string | Who triggered the notification (UID and friendly name). |
 | `status` | string | Workflow state associated with the message (`under_review`, `approved`, `rejected`). |
 | `title` / `body` | string | Text displayed in inbox cards. |
+| `href` | string | Optional deep link opened when the notification is activated (e.g., messages page or report detail). |
 | `reportDate` | string | ISO shift date (optional). |
 | `siteName` | string | Site label (optional). |
 | `unread` | boolean | `true` until the recipient reads it. |

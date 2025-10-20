@@ -2,7 +2,7 @@
   "scripts": {
     "lint": "eslint . --ext .js,.html",
     "lint:fix": "eslint . --ext .js,.html --fix",
-    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand tests/utils.test.cjs tests/pdf-service.test.mjs tests/messages-service.test.js",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand tests/utils.test.cjs tests/pdf-service.test.mjs tests/messages-service.test.js tests/notifications-menu.test.mjs",
     "test:unit": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand tests/utils.test.cjs tests/pdf-service.test.mjs tests/messages-service.test.js",
     "test:integration": "firebase emulators:exec --project test-messages-triggers --only firestore \"node scripts/run-integration-tests.js\"",
     "test:all": "npm run test:unit && npm run test:integration",

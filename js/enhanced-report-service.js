@@ -237,17 +237,18 @@ class EnhancedReportService {
         typeof report.data.controller1Id === 'string' &&
         typeof report.data.controller2Id === 'string' &&
         report.data.controller1Id.trim().toLowerCase() ===
-          report.data.controller2Id.trim().toLowerCase()
-      ;
-      const controllerUidList = Array.isArray(report.data.controllerUids)
+          report.data.controller2Id.trim().toLowerCase();
+      const controllerUidListSource = Array.isArray(report.data.controllerUids)
         ? report.data.controllerUids
-            .filter((uid) => typeof uid === 'string')
-            .map((uid) => uid.trim())
-            .filter((uid) => uid)
         : [];
+      const controllerUidList = controllerUidListSource
+        .filter((uid) => typeof uid === 'string')
+        .map((uid) => uid.trim())
+        .filter((uid) => uid);
       const hasDuplicateControllerUids =
         controllerUidList.length > 1 &&
-        new Set(controllerUidList.map((uid) => uid.toLowerCase())).size !== controllerUidList.length;
+        new Set(controllerUidList.map((uid) => uid.toLowerCase())).size !==
+          controllerUidList.length;
 
       if (hasDuplicateControllerIds || hasDuplicateControllerUids) {
         throw new Error('Reports must list two different on-duty controllers before submission');

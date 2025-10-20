@@ -54,6 +54,13 @@ export const DataModel = {
       weatherConditions: 'string', // Weather conditions
       temperature: 'string', // Temperature
       visibility: 'string', // Visibility conditions
+      controller1Id: 'string', // UID of the first on-duty controller
+      controller1Uid: 'string', // Alias for controller1Id (used by legacy listeners)
+      controller1Email: 'string', // Email of the first controller
+      controller2Id: 'string', // UID of the second on-duty controller
+      controller2Uid: 'string', // Alias for controller2Id (used by legacy listeners)
+      controller2Email: 'string', // Email of the second controller
+      controllerUids: 'array', // Array of distinct controller UIDs on duty
 
       // Activities and Incidents
       activities: 'array', // Array of activity objects
@@ -140,15 +147,64 @@ export const DataValidator = {
       throw new Error('Invalid report status');
     }
 
+    const normalize = (value) => (typeof value === 'string' ? value.trim() : '');
+    const toKey = (value) => normalize(value).toLowerCase();
+
+    const controller1Id =
+      normalize(reportData.controller1Uid) || normalize(reportData.controller1Id);
+    const controller2Id =
+      normalize(reportData.controller2Uid) || normalize(reportData.controller2Id);
+
+    if (controller1Id && controller2Id && toKey(controller1Id) === toKey(controller2Id)) {
+      throw new Error('Controller assignments must reference two different people');
+    }
+
+    const controller1Name = normalize(reportData.controller1);
+    const controller2Name = normalize(reportData.controller2);
+    const controller1Email = normalize(reportData.controller1Email);
+    const controller2Email = normalize(reportData.controller2Email);
+
     if (
-      typeof reportData.controller1Id === 'string' &&
-      typeof reportData.controller2Id === 'string' &&
-      reportData.controller1Id.trim() &&
-      reportData.controller2Id.trim() &&
-      reportData.controller1Id.trim().toLowerCase() ===
-        reportData.controller2Id.trim().toLowerCase()
+      !controller1Id &&
+      !controller2Id &&
+      controller1Name &&
+      controller2Name &&
+      toKey(controller1Name) === toKey(controller2Name)
     ) {
       throw new Error('Controller assignments must reference two different people');
+    }
+
+    if (
+      !controller1Id &&
+      !controller2Id &&
+      controller1Email &&
+      controller2Email &&
+      toKey(controller1Email) === toKey(controller2Email)
+    ) {
+      throw new Error('Controller assignments must reference two different people');
+    }
+
+    if (Array.isArray(reportData.controllerUids)) {
+      const sanitized = reportData.controllerUids
+        .filter((value) => typeof value === 'string' && value.trim())
+        .map((value) => value.trim());
+
+      if (sanitized.length !== reportData.controllerUids.length) {
+        throw new Error('Controller UID metadata must contain valid string values');
+      }
+
+      const unique = new Set(sanitized.map((value) => value.toLowerCase()));
+      if (unique.size !== sanitized.length) {
+        throw new Error('Controller UID metadata must not contain duplicates');
+      }
+
+      if (controller1Id && !sanitized.includes(controller1Id)) {
+        throw new Error('Controller UID metadata missing first controller');
+      }
+
+      if (controller2Id && !sanitized.includes(controller2Id)) {
+        throw new Error('Controller UID metadata missing second controller');
+      }
     }
 
     return true;
@@ -172,6 +228,13 @@ export const DataValidator = {
 };
 
 // Data Transformation Functions
+/**
+ * ## Audit 2025-10-19 – Logic Alignment
+ *
+ * - Persist controller UID/email metadata so security rules, review queues, and Cloud Functions share a single source of truth.
+ * - Enforce distinct controller assignments even when malicious clients bypass the UI.
+ * - Recorded in test harness via `DataTransformer` and `DataValidator` updates and verified during the QA logic audit.
+ */
 export const DataTransformer = {
   // Transform form data to report structure
   formToReport(formData, userId, options = {}) {
@@ -183,6 +246,20 @@ export const DataTransformer = {
         return value.trim();
       }
       return value ?? '';
+    };
+
+    const normalizeUid = (value) => {
+      if (typeof value === 'string') {
+        return value.trim();
+      }
+      return '';
+    };
+
+    const normalizeEmail = (value) => {
+      if (typeof value === 'string') {
+        return value.trim().toLowerCase();
+      }
+      return '';
     };
 
     const pickValue = (...candidates) => {
@@ -233,10 +310,23 @@ export const DataTransformer = {
 
     const controller1Name = pickValue(formData.controller1);
     const controller2Name = pickValue(formData.controller2);
+    const controller1Id = normalizeUid(formData.controller1Uid || formData.controller1Id);
+    const controller2Id = normalizeUid(formData.controller2Uid || formData.controller2Id);
+    const controller1Email = normalizeEmail(formData.controller1Email);
+    const controller2Email = normalizeEmail(formData.controller2Email);
+
+    const controllerUidEntries = [controller1Id, controller2Id].filter(Boolean);
+    const controllerUids = controllerUidEntries.filter(
+      (uid, index) => controllerUidEntries.indexOf(uid) === index
+    );
 
     const personnelOnDuty = [
-      controller1Name ? { name: controller1Name, role: ROLE_CONTROLLER } : null,
-      controller2Name ? { name: controller2Name, role: ROLE_CONTROLLER } : null,
+      controller1Name
+        ? { name: controller1Name, role: ROLE_CONTROLLER, uid: controller1Id || undefined }
+        : null,
+      controller2Name
+        ? { name: controller2Name, role: ROLE_CONTROLLER, uid: controller2Id || undefined }
+        : null,
     ].filter(Boolean);
 
     const reportDate = pickValue(formData.reportDate, formData.shiftDate);
@@ -252,7 +342,14 @@ export const DataTransformer = {
       submittedAt: options.submittedAt || null,
       submittedBy: options.submittedBy || '',
       controller1: controller1Name,
+      controller1Id,
+      controller1Uid: controller1Id || null,
+      controller1Email,
       controller2: controller2Name,
+      controller2Id,
+      controller2Uid: controller2Id || null,
+      controller2Email,
+      controllerUids,
       reportName: pickValue(formData.reportName),
       reportDate,
       shiftDate: reportDate,

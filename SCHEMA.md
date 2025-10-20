@@ -44,6 +44,9 @@ Primary document produced by controllers, enriched by Cloud Functions during the
 | `submittedBy` | string | UID of the user who submitted for review. |
 | `controller1` / `controller2` | string | Display names of the on-duty controllers. |
 | `controller1Id` / `controller2Id` | string | UIDs selected in the dropdowns. Enforced to be distinct. |
+| `controller1Uid` / `controller2Uid` | string | Alias fields maintained for legacy listeners; mirror the controller IDs. |
+| `controller1Email` / `controller2Email` | string | Lowercase emails for roster display and security-rule fallbacks. |
+| `controllerUids` | array<string> | Distinct list of on-duty controller UIDs (used by review queues, conversations, and security rules). |
 | `reportName` | string | Optional human-readable title. |
 | `shiftDate` | string | ISO date (`YYYY-MM-DD`). Mirrors `reportDate`. |
 | `shiftType` | string | Day/Night/etc. |
@@ -71,7 +74,7 @@ All timestamps are written with Firestore `serverTimestamp()` helpers and mirror
 
 | Field | Type | Notes |
 | ----- | ---- | ----- |
-| `personnelOnDuty` | array<object> | Derived list containing the two controllers with their roles. |
+| `personnelOnDuty` | array<object> | Derived list containing the two controllers with their roles and optional `uid` field. |
 | `reviewers` | array<object> | Assignment metadata for reviewers (see below). |
 | `approvals` | array<object> | Legacy structure retaining historical approval payloads. |
 | `formSnapshot` | map | Raw form submission for auditing/debugging. Includes dropdown selections and any transient fields. |

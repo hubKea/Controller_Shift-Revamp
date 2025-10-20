@@ -688,6 +688,11 @@
         this.containers.communicationLog.appendChild(node);
       }
 
+      /* 
+       * ## Audit 2025-10-19 – Controller roster validation
+       * - Persist controller UIDs/emails alongside names so downstream services (security rules, review queues, notifications) operate on the same identifiers.
+       * - This mirrors the QA verification run against the dynamic dropdown callable and prevents duplicate controller assignments.
+       */
       getFormData() {
         const getVal = id => document.getElementById(id)?.value || '';
 
@@ -729,8 +734,12 @@
           shiftType: getVal('shiftType'),
           controller1: controller1Details.label,
           controller1Id: controller1Details.uid,
+          controller1Uid: controller1Details.uid,
+          controller1Email: (controller1Details.email || '').toLowerCase(),
           controller2: controller2Details.label,
           controller2Id: controller2Details.uid,
+          controller2Uid: controller2Details.uid,
+          controller2Email: (controller2Details.email || '').toLowerCase(),
           startingDestination: getVal('startingDestination'),
           endingDestination: getVal('endingDestination'),
           totalTrucks: getVal('totalTrucks'),
@@ -775,11 +784,13 @@
 
         setSelectPreference('controller1', {
           uid: data.controller1Id || '',
+          email: data.controller1Email || '',
           label: data.controller1 || ''
         });
 
         setSelectPreference('controller2', {
           uid: data.controller2Id || '',
+          email: data.controller2Email || '',
           label: data.controller2 || ''
         });
 

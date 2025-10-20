@@ -20,6 +20,14 @@ import { ROLE_MANAGER } from './constants.js';
 import { DataModel, DataValidator, DataTransformer } from './data-model.js';
 import { nowIso } from './utils.js';
 
+/**
+ * ## Audit 2025-10-19 – Workflow hardening
+ *
+ * - Review queues now pivot on controller UID metadata so security rules, UI, and Cloud Functions agree on assignments.
+ * - Authors can no longer approve or reject their own reports from the client, mirroring Firestore rule enforcement.
+ * - Submission guards cross-check controller UID arrays to prevent duplicate selections observed during the QA logic audit.
+ */
+
 function buildTimestampFields({ includeCreated = false, clientTimestampIso } = {}) {
   const iso = clientTimestampIso || nowIso();
   const updatedServerValue = serverTimestamp();
@@ -223,14 +231,25 @@ class EnhancedReportService {
         throw new Error('Only draft reports can be submitted');
       }
 
-      if (
+      const hasDuplicateControllerIds =
         report.data.controller1Id &&
         report.data.controller2Id &&
         typeof report.data.controller1Id === 'string' &&
         typeof report.data.controller2Id === 'string' &&
         report.data.controller1Id.trim().toLowerCase() ===
           report.data.controller2Id.trim().toLowerCase()
-      ) {
+      ;
+      const controllerUidList = Array.isArray(report.data.controllerUids)
+        ? report.data.controllerUids
+            .filter((uid) => typeof uid === 'string')
+            .map((uid) => uid.trim())
+            .filter((uid) => uid)
+        : [];
+      const hasDuplicateControllerUids =
+        controllerUidList.length > 1 &&
+        new Set(controllerUidList.map((uid) => uid.toLowerCase())).size !== controllerUidList.length;
+
+      if (hasDuplicateControllerIds || hasDuplicateControllerUids) {
         throw new Error('Reports must list two different on-duty controllers before submission');
       }
 
@@ -370,7 +389,7 @@ class EnhancedReportService {
       const normalizedRole = (currentUser.role || '').toLowerCase();
       const isManager = normalizedRole === ROLE_MANAGER.toLowerCase();
       if (!isManager) {
-        constraints.push(where('controller2Id', '==', currentUser.user.uid));
+        constraints.push(where('controllerUids', 'array-contains', currentUser.user.uid));
       }
 
       let q = query(
@@ -387,7 +406,7 @@ class EnhancedReportService {
       const reports = [];
       snapshot.forEach((doc) => {
         const data = { id: doc.id, ...doc.data() };
-        if (data.createdBy && data.createdBy === currentUser.user.uid && !isManager) {
+        if (data.createdBy && data.createdBy === currentUser.user.uid) {
           return;
         }
         reports.push(data);
@@ -421,9 +440,7 @@ class EnhancedReportService {
         throw new Error('Only submitted reports can be approved');
       }
 
-      const normalizedRole = (currentUser.role || '').toLowerCase();
-      const isManager = normalizedRole === ROLE_MANAGER.toLowerCase();
-      if (report.data.createdBy && report.data.createdBy === currentUser.user.uid && !isManager) {
+      if (report.data.createdBy && report.data.createdBy === currentUser.user.uid) {
         throw new Error('You cannot approve your own report');
       }
 
@@ -489,9 +506,7 @@ class EnhancedReportService {
         throw new Error('Only submitted reports can be rejected');
       }
 
-      const normalizedRole = (currentUser.role || '').toLowerCase();
-      const isManager = normalizedRole === ROLE_MANAGER.toLowerCase();
-      if (report.data.createdBy && report.data.createdBy === currentUser.user.uid && !isManager) {
+      if (report.data.createdBy && report.data.createdBy === currentUser.user.uid) {
         throw new Error('You cannot reject your own report');
       }
 

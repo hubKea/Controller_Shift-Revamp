@@ -48,9 +48,81 @@ service cloud.firestore {
       );
     }
 
+    function controller1IdValue(resourceData) {
+      return (resourceData.controller1Id is string && resourceData.controller1Id != '')
+        ? resourceData.controller1Id
+        : (
+            (resourceData.controller1Uid is string && resourceData.controller1Uid != '')
+              ? resourceData.controller1Uid
+              : ''
+          );
+    }
+
+    function controller2IdValue(resourceData) {
+      return (resourceData.controller2Id is string && resourceData.controller2Id != '')
+        ? resourceData.controller2Id
+        : (
+            (resourceData.controller2Uid is string && resourceData.controller2Uid != '')
+              ? resourceData.controller2Uid
+              : ''
+          );
+    }
+
+    function controllerIdsAreDistinct(resourceData) {
+      let first = controller1IdValue(resourceData);
+      let second = controller2IdValue(resourceData);
+      return !(
+        (first is string && first != '') &&
+        (second is string && second != '') &&
+        first == second
+      );
+    }
+
+    function controllerUidListIsValid(resourceData) {
+      return !(resourceData.controllerUids is list) ||
+        (
+          resourceData.controllerUids.size() <= 2 &&
+          resourceData.controllerUids.all(uid, uid is string && uid != '') &&
+          !(
+            resourceData.controllerUids.size() == 2 &&
+            resourceData.controllerUids[0] == resourceData.controllerUids[1]
+          ) &&
+          (
+            !(controller1IdValue(resourceData) is string && controller1IdValue(resourceData) != '') ||
+            resourceData.controllerUids.hasAny([controller1IdValue(resourceData)])
+          ) &&
+          (
+            !(controller2IdValue(resourceData) is string && controller2IdValue(resourceData) != '') ||
+            resourceData.controllerUids.hasAny([controller2IdValue(resourceData)])
+          )
+        );
+    }
+
+    /**
+     * ## Audit 2025-10-19 - Controller validation
+     *
+     * - Enforce distinct controller assignments at the rule layer to close the gap identified during the QA logic audit.
+     * - Require the persisted `controllerUids` metadata to remain consistent with individual controller fields so
+     *   inbox, conversation, and review permissions stay aligned.
+     */
+    function controllerAssignmentsAreValid(resourceData) {
+      return controllerIdsAreDistinct(resourceData) && controllerUidListIsValid(resourceData);
+    }
+
     function matchesControllerAssignment(resource) {
       let user = getUserData();
+      let uid = isAuthenticated() ? request.auth.uid : '';
       return user != null && (
+        (
+          uid != '' &&
+          (
+            (resource.data.controller1Id is string && resource.data.controller1Id == uid) ||
+            (resource.data.controller2Id is string && resource.data.controller2Id == uid) ||
+            (resource.data.controller1Uid is string && resource.data.controller1Uid == uid) ||
+            (resource.data.controller2Uid is string && resource.data.controller2Uid == uid) ||
+            (resource.data.controllerUids is list && resource.data.controllerUids.hasAny([uid]))
+          )
+        ) ||
         matchesControllerField(resource.data.controller1, user.displayName, user.email) ||
         matchesControllerField(resource.data.controller2, user.displayName, user.email)
       );
@@ -87,17 +159,20 @@ service cloud.firestore {
       allow create: if isAuthenticated() &&
         request.resource.data.createdBy == request.auth.uid &&
         request.resource.data.status == 'draft' &&
-        request.resource.data.version == 1;
+        request.resource.data.version == 1 &&
+        controllerAssignmentsAreValid(request.resource.data);
 
       allow update: if isAuthenticated() && isCreator(resource) && isDraft(resource) &&
         request.resource.data.createdBy == resource.data.createdBy &&
-        request.resource.data.status == 'draft';
+        request.resource.data.status == 'draft' &&
+        controllerAssignmentsAreValid(request.resource.data);
 
       allow update: if isAuthenticated() && isCreator(resource) && isDraft(resource) &&
         request.resource.data.createdBy == resource.data.createdBy &&
-        request.resource.data.status == 'submitted';
+        request.resource.data.status == 'submitted' &&
+        controllerAssignmentsAreValid(request.resource.data);
 
-      allow update: if isManager();
+      allow update: if isManager() && controllerAssignmentsAreValid(request.resource.data);
 
       allow update: if canApprove() && isSubmitted(resource) &&
         request.resource.data.createdBy == resource.data.createdBy &&
@@ -105,7 +180,8 @@ service cloud.firestore {
          request.resource.data.status == 'under_review' ||
          request.resource.data.status == 'approved' ||
          request.resource.data.status == 'rejected') &&
-        resource.data.createdBy != request.auth.uid;
+        resource.data.createdBy != request.auth.uid &&
+        controllerAssignmentsAreValid(request.resource.data);
 
       allow delete: if isAuthenticated() && isCreator(resource) && isDraft(resource);
       allow delete: if isManager() && isDraft(resource);

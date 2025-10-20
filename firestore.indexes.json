@@ -101,6 +101,24 @@
           "order": "ASCENDING"
         },
         {
+          "fieldPath": "controllerUids",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "submittedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "shiftReports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
           "fieldPath": "submittedAt",
           "order": "DESCENDING"
         }

@@ -480,6 +480,13 @@ async function publishNotification(uid, payload) {
   return createInboxNotification(normalized, payload);
 }
 
+/**
+ * ## Audit 2025-10-19 – Controller metadata
+ *
+ * Keep conversation participants and inbox notifications aligned with the controller UID list that the
+ * client now persists. This prevents the QA-identified gap where the second on-duty controller failed
+ * to receive chat/notification updates.
+ */
 function collectControllerUids(after) {
   if (!after) return [];
 
@@ -488,6 +495,15 @@ function collectControllerUids(after) {
   if (after.controller2) candidates.push(after.controller2);
   if (typeof after.controller1Uid === 'string') candidates.push({ uid: after.controller1Uid });
   if (typeof after.controller2Uid === 'string') candidates.push({ uid: after.controller2Uid });
+  if (typeof after.controller1Id === 'string') candidates.push({ uid: after.controller1Id });
+  if (typeof after.controller2Id === 'string') candidates.push({ uid: after.controller2Id });
+  if (Array.isArray(after.controllerUids)) {
+    after.controllerUids.forEach((value) => {
+      if (typeof value === 'string' && value.trim()) {
+        candidates.push({ uid: value.trim() });
+      }
+    });
+  }
 
   const uids = new Set();
   candidates.forEach((candidate) => {

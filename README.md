@@ -262,8 +262,8 @@ Deploying functions requires `iam.serviceAccounts.ActAs` permission on the defau
 
 ## Data Model and User Provisioning
 
-- **SCHEMA.md** documents the Firestore layout: user records, shift reports, approval snapshots, inbox notifications, and the messaging collections.
-- **USER_SETUP_GUIDE.md** explains how to create Firebase Auth users, seed the matching Firestore documents (`displayName`, `email`, `isActive`, role permissions), and keep the roster synchronized.
+- **SCHEMA.md** documents the Firestore layout: user records, shift reports (including `controllerUids` metadata for on-duty staff), approval snapshots, inbox notifications, and the messaging collections.
+- **USER_SETUP_GUIDE.md** explains how to create Firebase Auth users, seed the matching Firestore documents (`displayName`, `email`, `isActive`, role permissions), and keep the roster synchronized while maintaining the enforced separation of duties (authors can never approve their own reports).
 - **js/data-model.js** contains the aggregate shift report schema mapping so both client and server understand expected fields.
 
 When adding new collection fields or business rules:

@@ -89,6 +89,47 @@ describe('DataValidator', () => {
         'Invalid report status'
       );
     });
+
+    test('throws when controller IDs are duplicated', () => {
+      const duplicateControllers = {
+        createdBy: 'user-123',
+        status: 'draft',
+        controller1Id: 'ctrl-1',
+        controller2Id: 'ctrl-1',
+      };
+
+      expect(() => DataValidator.validateShiftReport(duplicateControllers)).toThrow(
+        'Controller assignments must reference two different people'
+      );
+    });
+
+    test('throws when controller UID metadata contains duplicates', () => {
+      const duplicateUids = {
+        createdBy: 'user-123',
+        status: 'submitted',
+        controller1Id: 'ctrl-1',
+        controller2Id: 'ctrl-2',
+        controllerUids: ['ctrl-1', 'ctrl-1'],
+      };
+
+      expect(() => DataValidator.validateShiftReport(duplicateUids)).toThrow(
+        'Controller UID metadata must not contain duplicates'
+      );
+    });
+
+    test('throws when controller UID metadata omits an assigned controller', () => {
+      const missingUid = {
+        createdBy: 'user-123',
+        status: 'submitted',
+        controller1Id: 'ctrl-1',
+        controller2Id: 'ctrl-2',
+        controllerUids: ['ctrl-1'],
+      };
+
+      expect(() => DataValidator.validateShiftReport(missingUid)).toThrow(
+        'Controller UID metadata missing second controller'
+      );
+    });
   });
 });
 
@@ -98,7 +139,11 @@ describe('DataTransformer.formToReport', () => {
     const createdAt = new Date('2025-06-01T08:00:00Z');
     const formData = {
       controller1: '  Alice  ',
+      controller1Id: ' CTRL-1 ',
+      controller1Email: ' Alice@Example.com ',
       controller2: ' Bob ',
+      controller2Id: 'ctrl-2 ',
+      controller2Email: 'bob@example.com ',
       reportDate: ' 2025-06-01 ',
       shiftType: ' Night ',
       shiftTime: ' 22:00 ',
@@ -167,9 +212,16 @@ describe('DataTransformer.formToReport', () => {
     expect(report.controller1).toBe('Alice');
     expect(report.controller2).toBe('Bob');
     expect(report.personnelOnDuty).toEqual([
-      { name: 'Alice', role: ROLE_CONTROLLER },
-      { name: 'Bob', role: ROLE_CONTROLLER },
+      { name: 'Alice', role: ROLE_CONTROLLER, uid: 'CTRL-1' },
+      { name: 'Bob', role: ROLE_CONTROLLER, uid: 'ctrl-2' },
     ]);
+    expect(report.controller1Id).toBe('CTRL-1');
+    expect(report.controller1Uid).toBe('CTRL-1');
+    expect(report.controller1Email).toBe('alice@example.com');
+    expect(report.controller2Id).toBe('ctrl-2');
+    expect(report.controller2Uid).toBe('ctrl-2');
+    expect(report.controller2Email).toBe('bob@example.com');
+    expect(report.controllerUids).toEqual(['CTRL-1', 'ctrl-2']);
 
     expect(report.siteName).toBe('North Hub');
     expect(report.siteLocation).toBe('Eastern Zone');

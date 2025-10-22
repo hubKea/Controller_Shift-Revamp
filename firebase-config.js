@@ -2,72 +2,71 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
 import { getFirestore } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
-const importMetaEnv =
-  typeof import.meta !== 'undefined' && import.meta ? (import.meta.env ?? {}) : {};
-const processEnv = typeof process !== 'undefined' && process?.env ? process.env : {};
-const globalEnv =
-  typeof globalThis !== 'undefined' && globalThis.__FIREBASE_CONFIG__
-    ? globalThis.__FIREBASE_CONFIG__
-    : {};
+const REQUIRED_KEYS = ['apiKey', 'authDomain', 'projectId', 'appId'];
 
-const FALLBACK_KEYS = {
-  FIREBASE_API_KEY: ['FIREBASE_API_KEY', 'VITE_FIREBASE_API_KEY'],
-  FIREBASE_AUTH_DOMAIN: ['FIREBASE_AUTH_DOMAIN', 'VITE_FIREBASE_AUTH_DOMAIN'],
-  FIREBASE_PROJECT_ID: ['FIREBASE_PROJECT_ID', 'VITE_FIREBASE_PROJECT_ID'],
-  FIREBASE_STORAGE_BUCKET: ['FIREBASE_STORAGE_BUCKET', 'VITE_FIREBASE_STORAGE_BUCKET'],
-  FIREBASE_MESSAGING_SENDER_ID: [
-    'FIREBASE_MESSAGING_SENDER_ID',
-    'VITE_FIREBASE_MESSAGING_SENDER_ID',
-  ],
-  FIREBASE_APP_ID: ['FIREBASE_APP_ID', 'VITE_FIREBASE_APP_ID'],
-  FIREBASE_MEASUREMENT_ID: ['FIREBASE_MEASUREMENT_ID', 'VITE_FIREBASE_MEASUREMENT_ID'],
-};
+function readFirebaseConfig() {
+  const globalConfig =
+    typeof window !== 'undefined' && window.__FIREBASE_CONFIG__
+      ? window.__FIREBASE_CONFIG__
+      : undefined;
 
-function resolveEnvValue(key) {
-  const variants = FALLBACK_KEYS[key] || [key];
-  for (const variant of variants) {
-    if (importMetaEnv && typeof importMetaEnv[variant] === 'string' && importMetaEnv[variant]) {
-      return importMetaEnv[variant];
-    }
-    if (processEnv && typeof processEnv[variant] === 'string' && processEnv[variant]) {
-      return processEnv[variant];
-    }
+  if (!globalConfig || typeof globalConfig !== 'object') {
+    throw new Error(
+      'Firebase configuration is missing. Define window.__FIREBASE_CONFIG__ before loading firebase-config.js.'
+    );
   }
 
-  const globalKey = key
-    .toLowerCase()
-    .replace(/^firebase_/, '')
-    .replace(/_([a-z])/g, (_, char) => char.toUpperCase());
+  const normalized = Object.freeze({
+    apiKey:
+      globalConfig.apiKey ??
+      globalConfig.FIREBASE_API_KEY ??
+      globalConfig.VITE_FIREBASE_API_KEY ??
+      null,
+    authDomain:
+      globalConfig.authDomain ??
+      globalConfig.FIREBASE_AUTH_DOMAIN ??
+      globalConfig.VITE_FIREBASE_AUTH_DOMAIN ??
+      null,
+    projectId:
+      globalConfig.projectId ??
+      globalConfig.FIREBASE_PROJECT_ID ??
+      globalConfig.VITE_FIREBASE_PROJECT_ID ??
+      null,
+    storageBucket:
+      globalConfig.storageBucket ??
+      globalConfig.FIREBASE_STORAGE_BUCKET ??
+      globalConfig.VITE_FIREBASE_STORAGE_BUCKET ??
+      null,
+    messagingSenderId:
+      globalConfig.messagingSenderId ??
+      globalConfig.FIREBASE_MESSAGING_SENDER_ID ??
+      globalConfig.VITE_FIREBASE_MESSAGING_SENDER_ID ??
+      null,
+    appId:
+      globalConfig.appId ??
+      globalConfig.FIREBASE_APP_ID ??
+      globalConfig.VITE_FIREBASE_APP_ID ??
+      null,
+    measurementId:
+      globalConfig.measurementId ??
+      globalConfig.FIREBASE_MEASUREMENT_ID ??
+      globalConfig.VITE_FIREBASE_MEASUREMENT_ID ??
+      null,
+  });
 
-  if (globalEnv && typeof globalEnv[key] === 'string' && globalEnv[key]) {
-    return globalEnv[key];
-  }
-  if (globalEnv && typeof globalEnv[globalKey] === 'string' && globalEnv[globalKey]) {
-    return globalEnv[globalKey];
+  const missingKeys = REQUIRED_KEYS.filter((key) => !normalized[key]);
+  if (missingKeys.length) {
+    throw new Error(
+      `Missing Firebase configuration values: ${missingKeys.join(
+        ', '
+      )}. Ensure window.__FIREBASE_CONFIG__ defines the required keys before firebase-config.js is loaded.`
+    );
   }
 
-  return undefined;
+  return normalized;
 }
 
-const firebaseConfig = {
-  apiKey: resolveEnvValue('FIREBASE_API_KEY'),
-  authDomain: resolveEnvValue('FIREBASE_AUTH_DOMAIN'),
-  projectId: resolveEnvValue('FIREBASE_PROJECT_ID'),
-  storageBucket: resolveEnvValue('FIREBASE_STORAGE_BUCKET'),
-  messagingSenderId: resolveEnvValue('FIREBASE_MESSAGING_SENDER_ID'),
-  appId: resolveEnvValue('FIREBASE_APP_ID'),
-  measurementId: resolveEnvValue('FIREBASE_MEASUREMENT_ID'),
-};
-
-const requiredKeys = ['apiKey', 'authDomain', 'projectId', 'appId'];
-const missingRequired = requiredKeys.filter((key) => !firebaseConfig[key]);
-
-if (missingRequired.length) {
-  const message = `Missing Firebase configuration values: ${missingRequired.join(
-    ', '
-  )}. Provide them through environment variables or by defining window.__FIREBASE_CONFIG__.`;
-  throw new Error(message);
-}
+export const firebaseConfig = readFirebaseConfig();
 
 const app = initializeApp(firebaseConfig);
 
